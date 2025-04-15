@@ -1,0 +1,37 @@
+<!-- templates/upload_form.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Photos</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script>
+        // Warn if session is close to expiring
+        function warnSession(expiryTimestamp) {
+            const now = Date.now();
+            const diff = expiryTimestamp - now;
+            if (diff < 10 * 60 * 1000) {
+                alert("⚠️ Your session will expire soon. Please finish uploading.");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const expiry = localStorage.getItem("session_expiry");
+            if (expiry) {
+                warnSession(parseInt(expiry));
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload Photos to <span class="event-name">{{ event_name }}</span></h2>
+        <form method="post" action="/upload/{{ event_slug }}/1" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*,video/*" required />
+            <button type="submit">Upload</button>
+        </form>
+        <form method="get" action="/logout">
+            <button class="logout" type="submit">Logout</button>
+        </form>
+    </div>
+</body>
+</html>

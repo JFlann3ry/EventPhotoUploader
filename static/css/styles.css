@@ -1,0 +1,62 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f9f9f9;
+    padding: 40px;
+    color: #333;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+
+h2 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.event-name {
+    color: #0077cc;
+    font-weight: bold;
+}
+
+form {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+input[type="file"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+button {
+    padding: 10px;
+    border: none;
+    background: #0077cc;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: #005fa3;
+}
+
+button.logout {
+    background: #e74c3c;
+}
+
+button.logout:hover {
+    background: #c0392b;
+}

@@ -66,18 +66,19 @@ async def get_upload_form(request: Request, event_slug: str):
         return RedirectResponse(url="/")
 
     with Session(engine) as session:
-        print(f"Looking for event with slug: {event_slug}")  # Debugging
         event = session.query(Event).filter(Event.slug == event_slug).first()
 
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    print(f"Event found: {event.name}, {event.slug}")  # Debugging
+    # Pass a dummy guest_id for now (replace with actual logic if needed)
+    guest_id = 1  # Replace with logic to fetch the actual guest ID
 
     return templates.TemplateResponse("upload_form.html", {
         "request": request,
         "event_slug": event_slug,
-        "event_name": event.name
+        "event_name": event.name,
+        "guest_id": guest_id  # Pass guest_id to the template
     })
 
 @app.post("/upload/{event_slug}/{guest_id}")

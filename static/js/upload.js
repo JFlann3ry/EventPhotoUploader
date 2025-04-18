@@ -8,7 +8,7 @@ document.getElementById('uploadForm').onsubmit = function(event) {
     // Debugging logs
     console.log('Event Slug:', eventSlug);
     console.log('Guest ID:', guestId);
-
+    
     // Create FormData object
     var formData = new FormData(document.getElementById('uploadForm'));
     

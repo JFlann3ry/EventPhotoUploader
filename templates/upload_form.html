@@ -1,37 +1,39 @@
-<!-- templates/upload_form.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Upload Photos</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-    <script>
-        // Warn if session is close to expiring
-        function warnSession(expiryTimestamp) {
-            const now = Date.now();
-            const diff = expiryTimestamp - now;
-            if (diff < 10 * 60 * 1000) {
-                alert("⚠️ Your session will expire soon. Please finish uploading.");
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const expiry = localStorage.getItem("session_expiry");
-            if (expiry) {
-                warnSession(parseInt(expiry));
-            }
-        });
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Photo Upload</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
+
     <div class="container">
-        <h2>Upload Photos to <span class="event-name">{{ event_name }}</span></h2>
-        <form method="post" action="/upload/{{ event_slug }}/1" enctype="multipart/form-data">
-            <input type="file" name="file" accept="image/*,video/*" required />
-            <button type="submit">Upload</button>
-        </form>
-        <form method="get" action="/logout">
-            <button class="logout" type="submit">Logout</button>
+        <h2>Upload Your Photos</h2>
+
+        <!-- Hidden input fields for event_slug and guest_id -->
+        <input type="hidden" id="event_slug" value="{{ event_slug }}">
+        <input type="hidden" id="guest_id" value="{{ guest_id }}"> <!-- If guest_id is passed dynamically -->
+
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="guest_name">Your Name</label>
+                <input type="text" id="guest_name" name="guest_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="file_upload">Select Photos</label>
+                <input type="file" id="file_upload" name="file_upload" multiple required>
+            </div>
+
+            <div class="progress">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+
+            <button type="submit" class="btn">Upload</button>
         </form>
     </div>
+
+    <script src="/static/js/upload.js"></script>
 </body>
 </html>

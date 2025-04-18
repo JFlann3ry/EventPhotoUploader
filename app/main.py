@@ -16,6 +16,7 @@ from .event_credentials import EVENT_CREDENTIALS
 
 from itsdangerous import TimestampSigner, BadSignature
 
+
 # Config
 SECRET_KEY = "REPLACE_WITH_SOMETHING_RANDOM_AND_SECRET"
 signer = TimestampSigner(SECRET_KEY)
@@ -65,10 +66,13 @@ async def get_upload_form(request: Request, event_slug: str):
         return RedirectResponse(url="/")
 
     with Session(engine) as session:
+        print(f"Looking for event with slug: {event_slug}")  # Debugging
         event = session.query(Event).filter(Event.slug == event_slug).first()
 
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    print(f"Event found: {event.name}, {event.slug}")  # Debugging
 
     return templates.TemplateResponse("upload_form.html", {
         "request": request,
@@ -98,6 +102,9 @@ async def upload_file(request: Request, event_slug: str, guest_id: int, file: Up
     guest_folder = os.path.join(event_path, f"guest-{guest_id}")
     if not os.path.exists(guest_folder):
         os.makedirs(guest_folder)
+
+    # Debugging line: Log the file info before saving
+    print(f"Received file: {file.filename}, Content-Type: {file.content_type}")
 
     unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
     file_location = os.path.join(guest_folder, unique_filename)
@@ -141,6 +148,7 @@ async def upload_file(request: Request, event_slug: str, guest_id: int, file: Up
             session.rollback()  # Rollback in case of an error
 
     return {"filename": unique_filename, "location": file_location}
+
 
 @app.get("/logout")
 async def logout():

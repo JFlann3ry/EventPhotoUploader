@@ -1,0 +1,17 @@
+<!-- This is a simple HTML template for displaying user profile information -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Profile</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ user.first_name }}!</h1>
+        <p>Your event date is: {{ user.event_date }}</p>
+        <p>Your email is: {{ user.email }}</p>
+        <a href="/logout">Logout</a>
+    </div>
+</body>
+</html>

@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
-from .routes.event_routes import event_router
 from .routes.upload_routes import upload_router
 from .routes.auth_routes import auth_router
+from .routes.event_routes import router as event_router
+from .routes.page_routes import router as page_router
+from .database import init_db
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -20,9 +22,29 @@ templates = Jinja2Templates(directory="templates")
 STORAGE_ROOT = Path("/media/devmon/Elements/EventPhotoUploader/events")
 
 # Include routers
-app.include_router(event_router, prefix="/events")
+app.include_router(event_router, prefix="/api")
 app.include_router(upload_router, prefix="/upload")
 app.include_router(auth_router, prefix="/auth")
+app.include_router(page_router)
+
+@app.get("/")
+async def home(request: Request):
+    """
+    Serve the home page.
+    """
+    return templates.TemplateResponse("home.html", {"request": request})
+
+@app.on_event("startup")
+async def on_startup():
+    await init_db()
+
+# Example event data
+example_event = {
+    "name": "Wedding Celebration",
+    "description": "A beautiful wedding event.",
+    "event_code": "WED123",
+    "password": "securepassword"
+}
 
 if __name__ == "__main__":
     import uvicorn

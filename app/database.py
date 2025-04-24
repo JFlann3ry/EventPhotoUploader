@@ -1,17 +1,22 @@
-from sqlmodel import SQLModel, create_engine
-from sqlalchemy.orm import sessionmaker  # <-- Import sessionmaker here
-from .models import Event, File, FileMetadata  # Import FileMetadata model
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
+from .models import Event, FileMetadata, File
 
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+DATABASE_URL = "sqlite+aiosqlite:///./database.db"
 
-# Create engine
-engine = create_engine(sqlite_url, echo=True)
+# Create an asynchronous engine
+engine = create_async_engine(DATABASE_URL, echo=True)
 
-# Create a session maker for interacting with the database
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create a sessionmaker for asynchronous sessions
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    class_=AsyncSession
+)
 
-# Function to create the database and tables
-def create_db_and_tables():
-    # Create all tables (Event, File, and FileMetadata)
-    SQLModel.metadata.create_all(bind=engine)
+async def init_db():
+    async with engine.begin() as conn:
+        # Create all tables
+        await conn.run_sync(SQLModel.metadata.create_all)

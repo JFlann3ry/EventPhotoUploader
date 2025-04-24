@@ -1,37 +1,59 @@
-from fastapi import APIRouter, HTTPException, Form
-from sqlmodel import Session
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from uuid import uuid4
 from datetime import datetime
 
-from ..models import Event
-from ..database import engine
+router = APIRouter()
 
-event_router = APIRouter()
+# In-memory storage for demonstration purposes
+events = {}
 
-STORAGE_ROOT = Path("/media/devmon/Elements/EventPhotoUploader/events")
+# Pydantic models
+class EventCreate(BaseModel):
+    name: str
+    description: str = None
+    event_code: str
+    password: str
 
-@event_router.post("/")
-def create_event(event: Event, password: str = Form(...)):
-    """
-    Create a new event and its corresponding folder.
-    """
-    event_path = STORAGE_ROOT / event.slug
+class EventUpdate(BaseModel):
+    name: str = None
+    description: str = None
 
-    if event_path.exists():
-        raise HTTPException(status_code=400, detail="Event folder already exists")
+@router.post("/events")
+async def create_event(event: EventCreate):
+    event_id = str(uuid4())
+    events[event_id] = {
+        "id": event_id,
+        "name": event.name,
+        "description": event.description,
+        "event_code": event.event_code,
+        "password": event.password,  # In production, hash this password
+        "created_at": datetime.utcnow(),
+        "updated_at": None,
+    }
+    return events[event_id]
 
-    event_path.mkdir(parents=True, exist_ok=True)
+@router.get("/events/{event_id}")
+async def get_event(event_id: str):
+    if event_id not in events:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return events[event_id]
 
-    event_db = Event(
-        name=event.name,
-        slug=event.slug,
-        storage_path=str(event_path),
-        password=password  # Store the password in the database
-    )
+@router.put("/events/{event_id}")
+async def update_event(event_id: str, event_update: EventUpdate):
+    if event_id not in events:
+        raise HTTPException(status_code=404, detail="Event not found")
+    event = events[event_id]
+    if event_update.name:
+        event["name"] = event_update.name
+    if event_update.description:
+        event["description"] = event_update.description
+    event["updated_at"] = datetime.utcnow()
+    return event
 
-    with Session(engine) as session:
-        session.add(event_db)
-        session.commit()
-        session.refresh(event_db)
-
-    return {"message": "Event created", "event": event_db}
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: str):
+    if event_id not in events:
+        raise HTTPException(status_code=404, detail="Event not found")
+    del events[event_id]
+    return {"message": "Event deleted successfully"}

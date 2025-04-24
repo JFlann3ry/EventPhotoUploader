@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Event Photo Uploader{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="/"><img src="/static/images/logo-placeholder.png" alt="Logo" style="height:40px;"></a>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/how-it-works">How it works</a></li>
+                <li><a href="/pricing">Pricing</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/help-center">Help Center</a></li>
+                <li><a href="/sign-up">Sign Up</a> / <a href="/auth/login">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

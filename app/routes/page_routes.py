@@ -19,3 +19,11 @@ async def guest_login(request: Request):
 @router.get("/sign-up")
 async def sign_up(request: Request):
     return templates.TemplateResponse("sign_up.html", {"request": request})
+
+@router.get("/about")
+async def about(request: Request):
+    return templates.TemplateResponse("about.html", {"request": request})
+
+@router.get("/help-center")
+async def help_center(request: Request):
+    return templates.TemplateResponse("help_center.html", {"request": request})

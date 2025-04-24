@@ -83,18 +83,19 @@ button.logout:hover {
 /* Responsive Design */
 @media screen and (max-width: 768px) {
     body {
-        padding: 20px;
+        padding: 10px;
     }
 
     .container {
-        padding: 20px;
+        padding: 15px;
+        font-size: 14px;
     }
 
     h2 {
         font-size: 1.2em;
     }
 
-    input[type="file"], input[type="text"], button {
+    input[type="text"], input[type="file"], button {
         font-size: 14px;
         padding: 10px;
     }

@@ -25,10 +25,10 @@ async def login_post(
     email: str = Form(...), 
     password: str = Form(...)
 ):
-    async with SessionLocal() as session:
+    with SessionLocal() as session:
         statement = select(User).where(User.email == email)
-        results = await session.execute(statement)
-        user = results.scalar_one_or_none()
+        results = session.exec(statement)
+        user = results.first()
         if not user or not bcrypt.checkpw(password.encode("utf8"), user.hashed_password.encode("utf8")):
             raise HTTPException(status_code=400, detail="Invalid email or password.")
         # Generate session token using JWT
@@ -37,7 +37,7 @@ async def login_post(
             "exp": time.time() + TOKEN_EXPIRE_SECONDS
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-        response = RedirectResponse(url="/profile", status_code=303)
+        response = RedirectResponse(url="/auth/profile", status_code=303)
         response.set_cookie("session_token", token)
         return response
 
@@ -45,24 +45,24 @@ async def login_post(
 async def profile(request: Request):
     token = request.cookies.get("session_token")
     if not token:
-        return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url="/auth/login", status_code=303)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("user_id")
     except Exception:
-        return RedirectResponse(url="/login", status_code=303)
-    async with SessionLocal() as session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
         statement = select(User).where(User.id == user_id)
-        results = await session.execute(statement)
-        user = results.scalar_one_or_none()
+        results = session.exec(statement)
+        user = results.first()
     if not user:
-        return RedirectResponse(url="/login", status_code=303)
+        return RedirectResponse(url="/auth/login", status_code=303)
     context = {"request": request, "user": user}
     return templates.TemplateResponse("profile.html", context)
 
 @auth_router.get("/logout")
 async def logout():
-    response = RedirectResponse(url="/", status_code=303)
+    response = RedirectResponse(url="/auth/login", status_code=303)
     response.delete_cookie("session_token")
     return response
 
@@ -73,11 +73,11 @@ async def register_user(
     email: str = Form(...),
     password: str = Form(...)
 ):
-    async with SessionLocal() as session:
+    with SessionLocal() as session:
         # Check for existing user by email
         statement = select(User).where(User.email == email)
-        results = await session.execute(statement)
-        existing_user = results.scalar_one_or_none()
+        results = session.exec(statement)
+        existing_user = results.first()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already exists.")
             
@@ -96,6 +96,6 @@ async def register_user(
             hashed_password=hashed.decode("utf8")
         )
         session.add(user)
-        await session.commit()
+        session.commit()
         # Optionally, set a session cookie here if you want the user to be logged in immediately
         return RedirectResponse(url="/auth/profile", status_code=303)

@@ -16,15 +16,6 @@ async def pricing(request: Request):
 async def guest_login(request: Request):
     return templates.TemplateResponse("guest_login.html", {"request": request})
 
-@router.get("/login")
-async def login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
 @router.get("/sign-up")
 async def sign_up(request: Request):
     return templates.TemplateResponse("sign_up.html", {"request": request})
-
-@router.post("/auth/sign-up")
-async def auth_sign_up(request: Request):
-    # Handle sign-up logic here
-    pass

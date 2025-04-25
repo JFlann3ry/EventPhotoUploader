@@ -1,44 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Photo Upload</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-
-    <div class="container">
-        <h2>Upload Your Photos</h2>
-
-        <!-- Hidden input fields for event_slug and guest_id -->
-        <input type="hidden" id="event_slug" value="{{ event_slug }}">
-        <input type="hidden" id="guest_id" value="{{ guest_id }}">
-
-        <form id="uploadForm" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="event_code">Event Code</label>
-                <input type="text" id="event_code" name="event_code" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-
-            <div class="form-group">
-                <label for="file_upload">Select Photos</label>
-                <input type="file" id="file_upload" name="file_upload" multiple required>
-            </div>
-
-            <div class="progress">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
-
-            <button type="submit" class="btn">Upload</button>
-        </form>
-    </div>
-
-    <script src="/static/js/upload.js"></script>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Upload Photos for Event{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Upload Your Photos</h2>
+    {% if success %}
+        <p style="color:green;">Upload successful!</p>
+    {% endif %}
+    <form method="POST" action="/upload/{{ event.id }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="guest_name">Your Name</label>
+            <input type="text" id="guest_name" name="guest_name" required>
+        </div>
+        <div class="form-group">
+            <label for="file_upload">Select Photos</label>
+            <input type="file" id="file_upload" name="file_upload" multiple required>
+        </div>
+        <button type="submit" class="btn">Upload</button>
+    </form>
+</div>
+{% endblock %}

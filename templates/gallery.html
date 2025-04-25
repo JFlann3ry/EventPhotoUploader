@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block head %}
+    <link rel="stylesheet" href="/static/css/gallery.css">
+{% endblock %}
+{% block title %}Your Event Photos{% endblock %}
+{% block content %}
+<div class="gallery-page">
+    <h1>Your Event Photos</h1>
+    <a href="/auth/download-all" class="btn" style="margin-bottom: 20px; display: inline-block;">Download All Photos</a>
+    {% if files %}
+        <div class="gallery-container">
+        {% for file in files %}
+            <div class="gallery-item">
+                {% if file.filename.endswith('.jpg') or file.filename.endswith('.jpeg') or file.filename.endswith('.png') or file.filename.endswith('.gif') %}
+                    <img src="{{ file.filepath }}" alt="{{ file.filename }}">
+                {% elif file.filename.endswith('.mp4') or file.filename.endswith('.mov') or file.filename.endswith('.webm') %}
+                    <video controls>
+                        <source src="{{ file.filepath }}">
+                    </video>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>No photos uploaded yet.</p>
+    {% endif %}
+    <a href="/auth/profile">Back to Profile</a>
+</div>
+{% endblock %}

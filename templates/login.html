@@ -1,28 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Home - Event Photo Uploader{% endblock %}
+{% block title %}Login - Event Photo Uploader{% endblock %}
 {% block content %}
- 
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        <form method="post" action="/auth/login">
-            <input type="email" name="email" placeholder="Email" required><br>
-            <input type="password" name="password" placeholder="Password" required><br>
-            <button type="submit">Login</button>
-        </form>
-        <a href="/">Back to Home</a>
-    </div>
-</body>
-</html>
-
-
-    
-    {% endblock %}  
+<div class="container">
+    <h1>Login</h1>
+    <form method="post" action="/auth/login">
+        <input type="email" name="email" placeholder="Email" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+    <a href="/">Back to Home</a>
+</div>
+{% endblock %}

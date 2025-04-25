@@ -6,17 +6,19 @@ from sqlmodel import Session
 import uuid
 import aiofiles
 from pathlib import Path
+from app.config import STORAGE_ROOT
 
-STORAGE_ROOT = Path("/path/to/storage/root")
 engine = None  # Replace with your actual SQLModel engine instance
 
 app = FastAPI()
 
 class Event(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str
-    slug: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    id: int = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    event_type_id: int = Field(default=None, foreign_key="eventtype.id")
+    name: str = Field(default="")  # <-- Add this line
+    event_date: Optional[date] = None  # <-- Add this line
+    welcome_message: str = Field(default="")
     storage_path: str
     password: Optional[str] = None
     deleted_at: Optional[datetime] = None
@@ -51,6 +53,7 @@ class Guest(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     email: Optional[str] = None
+    event_id: int = Field(foreign_key="event.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class User(SQLModel, table=True):
@@ -60,3 +63,8 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True)
     hashed_password: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+
+class EventType(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    event_type: str

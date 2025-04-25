@@ -1,23 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Home - Event Photo Uploader{% endblock %}
+{% block title %}Your Profile - Event Photo Uploader{% endblock %}
 {% block content %}
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Your Profile</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Welcome, {{ user.first_name }}!</h1>
-        <p>Your event date is: {{ user.event_date }}</p>
-        <p>Your email is: {{ user.email }}</p>
-        <a href="/auth/logout">Logout</a>
-    </div>
-</body>
-</html>
-
-    
-    {% endblock %}
+<div class="container">
+    <h1>Welcome, {{ user.first_name }}!</h1>
+    <p>Your event date is: {{ user.event_date }}</p>
+    <p>Your email is: {{ user.email }}</p>
+    <a href="/auth/gallery">View & Download Your Event Photos</a><br>
+    <a href="/auth/event-details">View & Edit Event Details</a><br>
+    <a href="/auth/logout">Logout</a>
+</div>
+{% endblock %}

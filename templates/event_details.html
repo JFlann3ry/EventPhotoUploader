@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Event Details{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Your Event Details</h1>
+    <form method="post" action="/auth/event-details">
+        <label for="name">Event Name:</label>
+        <input type="text" id="name" name="name" value="{{ event.name if event else '' }}" required>
+        <br><br>
+        <label for="event_date">Event Date:</label>
+        <input type="date" id="event_date" name="event_date" value="{{ event.event_date if event and event.event_date else '' }}">
+        <br><br>
+        <label for="event_type_id">Event Type:</label>
+        <select name="event_type_id" id="event_type_id" required>
+            {% for et in event_types %}
+                <option value="{{ et.id }}" {% if event and event.event_type_id == et.id %}selected{% endif %}>{{ et.event_type }}</option>
+            {% endfor %}
+        </select>
+        <br><br>
+        <label for="welcome_message">Welcome Message:</label><br>
+        <textarea name="welcome_message" id="welcome_message" rows="4" cols="50">{{ event.welcome_message if event else '' }}</textarea>
+        <br><br>
+        <button type="submit">Save</button>
+    </form>
+    <h2>Share Your Event Upload Page</h2>
+    <p>Scan or share this QR code to let guests upload photos to your event:</p>
+    <img src="/auth/event-qr" alt="Event QR Code" style="width:200px;height:200px;">
+    <br>
+    <a href="/auth/profile">Back to Profile</a>
+    {% if event %}
+    <a href="/upload/{{ event.id }}" class="btn">View Event Page (Guest Upload)</a>
+    {% endif %}
+</div>
+{% endblock %}

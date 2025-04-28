@@ -13,6 +13,8 @@ from app.dummy_data import insert_dummy_event_types
 from app.export_events import export_events_to_pdf
 from app.config import STORAGE_ROOT
 
+from app.template_env import templates
+
 # Initialize FastAPI app with lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,9 +31,6 @@ app.mount(
     StaticFiles(directory=STORAGE_ROOT),
     name="event_files"
 )
-
-# Configure templates
-templates = Jinja2Templates(directory="templates")
 
 # Include routers
 app.include_router(event_router, prefix="/api")

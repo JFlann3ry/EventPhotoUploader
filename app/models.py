@@ -7,11 +7,10 @@ class User(SQLModel, table=True):
     first_name: str = Field(max_length=25)
     last_name: str = Field(max_length=25)
     email: str = Field(max_length=50, index=True, unique=True)
-    event_id: Optional[int] = Field(default=None, foreign_key="event.id")
     created_date: datetime = Field(default_factory=datetime.utcnow)
     hashed_password: str
 
-    events: List["Event"] = Relationship(back_populates="user")
+    events: List["Event"] = Relationship(back_populates="user") #changed from Optional to List
     billings: List["Billing"] = Relationship(back_populates="user")
 
 class Event(SQLModel, table=True):
@@ -25,7 +24,6 @@ class Event(SQLModel, table=True):
     event_code: int
     event_password: str
     pricing_id: int = Field(foreign_key="pricing.id")
-    qrid: int = Field(foreign_key="qrcode.id")
 
     user: User = Relationship(back_populates="events")
     guests: List["Guest"] = Relationship(back_populates="event")
@@ -33,8 +31,10 @@ class Event(SQLModel, table=True):
     event_storage: Optional["EventStorage"] = Relationship(back_populates="event")
     file_metadata: List["FileMetadata"] = Relationship(back_populates="event")
     guest_sessions: List["GuestSession"] = Relationship(back_populates="event")
-    qrcode: Optional["QRCode"] = Relationship(back_populates="event")
+    # Specify foreign_keys for clarity (optional but good practice)
+    qrcode: Optional["QRCode"] = Relationship(back_populates="event", sa_relationship_kwargs={"uselist": False, "foreign_keys": "[QRCode.event_id]"})
     event_type: Optional["EventType"] = Relationship(back_populates="events")
+    pricing: "Pricing" = Relationship(back_populates="events")
 
 class Guest(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -80,7 +80,7 @@ class QRCode(SQLModel, table=True):
     qr_url: str
     scanned_count: int = Field(default=0)
 
-    event: Event = Relationship(back_populates="qrcode")
+    event: Event = Relationship(back_populates="qrcode", sa_relationship_kwargs={"foreign_keys": "[QRCode.event_id]"})
 
 class EventType(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

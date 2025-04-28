@@ -15,8 +15,8 @@ def insert_dummy_event_types():
     with Session(engine) as session:
         for event_type in DEFAULT_EVENT_TYPES:
             exists = session.exec(
-                select(EventType).where(EventType.name == event_type)
+                select(EventType).where(EventType.event_type_name == event_type)
             ).first()
             if not exists:
-                session.add(EventType(name=event_type))
+                session.add(EventType(event_type_name=event_type))
         session.commit()

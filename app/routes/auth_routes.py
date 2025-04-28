@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
-from fastapi.templating import Jinja2Templates
+from app.template_env import templates
 from sqlmodel import select
 import bcrypt, time, jwt
-from datetime import datetime
+from datetime import datetime, date
 from app.models import User, Event, FileMetadata, EventType
 from app.database import SessionLocal
 from fastapi import Form
@@ -15,9 +15,11 @@ import os
 from app.export_events import export_events_to_pdf
 import zipfile
 import io
+import traceback
+from sqlalchemy.exc import SQLAlchemyError
+from pathlib import Path
 
 auth_router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 # Secret configuration (in a production setting store these securely)
 SECRET_KEY = "your-secret-key"
@@ -78,6 +80,7 @@ async def logout():
 @auth_router.post("/sign-up")
 async def register_user(
     first_name: str = Form(...),
+    last_name: str = Form(...), 
     event_date: str = Form(...),  # expecting YYYY-MM-DD
     email: str = Form(...),
     password: str = Form(...)
@@ -100,13 +103,28 @@ async def register_user(
         hashed = bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt())
         user = User(
             first_name=first_name,
-            event_date=parsed_date,
+            last_name=last_name,
             email=email,
             hashed_password=hashed.decode("utf8")
         )
         session.add(user)
         session.commit()
-        # Optionally, set a session cookie here if you want the user to be logged in immediately
+        session.refresh(user)  # Get the new user's ID
+
+        # Create an Event for the new user
+        event = Event(
+            user_id=user.id,
+            name=None,
+            date=parsed_date,
+            welcome_message=None,
+            storage_path=f"{STORAGE_ROOT}/{user.id}",
+            event_code=0,  # Set a default or generate as needed
+            event_password="",  # Set a default or generate as needed
+            pricing_id=1  # Set a default or handle as needed
+        )
+        session.add(event)
+        session.commit()
+
         return RedirectResponse(url="/auth/profile", status_code=303)
 
 @auth_router.get("/gallery")
@@ -142,18 +160,18 @@ async def user_gallery(request: Request):
 @auth_router.get("/download/{file_id}")
 async def download_file(file_id: int):
     with SessionLocal() as session:
-        file = session.query(FileMetadata).filter(FileMetadata.id == file_id).first()
+        file = session.exec(FileMetadata).filter(FileMetadata.id == file_id).first()
         if not file:
             raise HTTPException(status_code=404, detail="File not found")
         # Build the file path (adjust as needed)
-        event = session.query(Event).filter(Event.id == file.event_id).first()
-        file_path = Path(event.storage_path) / file.filename
+        event = session.exec(Event).filter(Event.id == file.event_id).first()
+        file_path = Path(event.storage_path) / file.file_name
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found on disk")
-        return FileResponse(path=str(file_path), filename=file.filename, media_type="application/octet-stream")
+        return FileResponse(path=str(file_path), filename=file.file_name, media_type="application/octet-stream")
 
-@auth_router.get("/event-details")
-async def event_details(request: Request):
+@auth_router.get("/event-details/{event_id}")
+async def event_details(request: Request, event_id: int):
     token = request.cookies.get("session_token")
     if not token:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -163,49 +181,72 @@ async def event_details(request: Request):
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.query(User).filter(User.id == user_id).first()
-        event = session.query(Event).filter(Event.user_id == user_id).first()
-        event_types = session.query(EventType).all()
+        # Use select() to create a SQL expression
+        user = session.exec(select(User).filter(User.id == user_id)).first()
+        event = session.exec(select(Event).filter(Event.id == event_id, Event.user_id == user_id)).first()
+        event_types = session.exec(select(EventType)).all()
         # If event does not exist, show the same form but with empty/default values
         if not event:
-            context = {"request": request, "user": user, "event": None, "event_types": event_types}
+            context = {"request": request, "user": user, "event": None, "event_types": event_types, "event_id": event_id}
             return templates.TemplateResponse("event_details.html", context)
-    context = {"request": request, "user": user, "event": event, "event_types": event_types}
+    context = {"request": request, "user": user, "event": event, "event_types": event_types,  "event_id": event_id}
     return templates.TemplateResponse("event_details.html", context)
 
-@auth_router.post("/event-details")
+@auth_router.post("/event-details/{event_id}")
 async def update_event_details(
     request: Request,
+    event_id: int,
     name: str = Form(...),
     event_date: str = Form(...),
     event_type_id: int = Form(...),
     welcome_message: str = Form(...),
 ):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
-        return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        event = session.query(Event).filter(Event.user_id == user_id).first()
+        user_id = 4  # Replace with your actual user ID retrieval logic
         event_folder = os.path.join(STORAGE_ROOT, str(user_id))
         folder_created = False
         if not os.path.exists(event_folder):
             os.makedirs(event_folder, exist_ok=True)
             folder_created = True
         # Parse event_date
+        print("DEBUG: Received event_date:", event_date)
         parsed_date = None
         if event_date:
             try:
                 parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
             except ValueError:
+                print("DEBUG: Failed to parse event_date")
                 parsed_date = None
+        if not parsed_date:
+            # Re-render the form with an error message
+            event_types = session.query(EventType).all()
+            context = {
+                "request": request,
+                "user": session.query(User).filter(User.id == user_id).first(),
+                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
+                "event_types": event_types,
+                "error": "Event date is required and must be valid.",
+                "event_id": event_id
+            }
+            return templates.TemplateResponse("event_details.html", context)
+
+        # Check if the parsed date is in the past
+        if parsed_date < date.today():
+            event_types = session.query(EventType).all()
+            context = {
+                "request": request,
+                "user": session.query(User).filter(User.id == user_id).first(),
+                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
+                "event_types": event_types,
+                "error": "Event date cannot be in the past.",
+                "event_id": event_id
+            }
+            return templates.TemplateResponse("event_details.html", context)
+
+        event = session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first()
         if event:
             event.name = name
-            event.event_date = parsed_date
+            event.date = parsed_date
             event.event_type_id = event_type_id
             event.welcome_message = welcome_message
             event.storage_path = event_folder
@@ -213,16 +254,34 @@ async def update_event_details(
             event = Event(
                 user_id=user_id,
                 name=name,
-                event_date=parsed_date,
+                date=parsed_date,
                 event_type_id=event_type_id,
                 welcome_message=welcome_message,
-                storage_path=event_folder
+                storage_path=event_folder,
+                event_code=0,
+                event_password="",
+                pricing_id=1
             )
             session.add(event)
-        session.commit()
+        try:
+            session.commit()
+        except SQLAlchemyError as e:
+            session.rollback()
+            print(f"DEBUG: Database error: {e}")
+            traceback.print_exc()  # Print the traceback
+            # Handle the error, e.g., show an error message to the user
+            context = {
+                "request": request,
+                "user": session.query(User).filter(User.id == user_id).first(),
+                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
+                "event_types": session.query(EventType).all(),
+                "error": "Failed to update event details. Please try again.",
+                "event_id": event_id
+            }
+            return templates.TemplateResponse("event_details.html", context)
         if folder_created:
             export_events_to_pdf()
-    return RedirectResponse(url="/auth/event-details", status_code=303)
+        return RedirectResponse(url=f"/auth/event-details/{event_id}", status_code=303)
 
 @auth_router.get("/event-qr")
 async def event_qr(request: Request):
@@ -280,3 +339,83 @@ async def download_all_photos(request: Request):
             media_type="application/x-zip-compressed",
             headers={"Content-Disposition": "attachment; filename=event_photos.zip"}
         )
+
+@auth_router.get("/events")
+async def list_events(request: Request):
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
+        user = session.exec(select(User).filter(User.id == user_id)).first()
+        if not user:
+            return RedirectResponse(url="/auth/login", status_code=303)
+        events = session.exec(select(Event).filter(Event.user_id == user_id)).all()
+    context = {"request": request, "user": user, "events": events}
+    return templates.TemplateResponse("event_list.html", context)
+
+@auth_router.get("/create-event")
+async def create_event_get(request: Request):
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
+        user = session.exec(select(User).filter(User.id == user_id)).first()
+        event_types = session.exec(select(EventType)).all()
+    context = {"request": request, "user": user, "event_types": event_types}
+    return templates.TemplateResponse("create_event.html", context)
+
+@auth_router.post("/create-event")
+async def create_event_post(
+    request: Request,
+    name: str = Form(...),
+    event_date: str = Form(...),
+    event_type_id: int = Form(...),
+    welcome_message: str = Form(...),
+):
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
+        user = session.exec(select(User).filter(User.id == user_id)).first()
+        if not user:
+            return RedirectResponse(url="/auth/login", status_code=303)
+        # Parse event_date string to date object
+        try:
+            parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid event date format. Use YYYY-MM-DD.")
+        event_folder = os.path.join(STORAGE_ROOT, str(user_id))
+        folder_created = False
+        if not os.path.exists(event_folder):
+            os.makedirs(event_folder, exist_ok=True)
+            folder_created = True
+        event = Event(
+            user_id=user_id,
+            name=name,
+            date=parsed_date,
+            event_type_id=event_type_id,
+            welcome_message=welcome_message,
+            storage_path=event_folder,
+            event_code=0,  # Set a default or generate as needed
+            event_password="",  # Set a default or generate as needed
+            pricing_id=1  # Set a default or handle as needed
+        )
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+    return RedirectResponse(url="/auth/events", status_code=303)

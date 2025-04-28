@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import select
 import bcrypt, time, jwt
 from datetime import datetime
-from app.models import User, Event, File, EventType
+from app.models import User, Event, FileMetadata, EventType
 from app.database import SessionLocal
 from fastapi import Form
 import qrcode
@@ -142,7 +142,7 @@ async def user_gallery(request: Request):
 @auth_router.get("/download/{file_id}")
 async def download_file(file_id: int):
     with SessionLocal() as session:
-        file = session.query(File).filter(File.id == file_id).first()
+        file = session.query(FileMetadata).filter(FileMetadata.id == file_id).first()
         if not file:
             raise HTTPException(status_code=404, detail="File not found")
         # Build the file path (adjust as needed)

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models import Event, File
+from app.models import Event, FileMetadata
 from app.database import SessionLocal, create_db_and_tables
 
 # Create the database and tables if they don't exist
@@ -16,8 +16,8 @@ try:
     db.refresh(event)
 
     # Create some files associated with the event
-    file1 = File(filename="photo1.jpg", event_id=event.id, file_type="photo")
-    file2 = File(filename="photo2.jpg", event_id=event.id, file_type="photo")
+    file1 = FileMetadata(filename="photo1.jpg", event_id=event.id, file_type="photo")
+    file2 = FileMetadata(filename="photo2.jpg", event_id=event.id, file_type="photo")
 
     db.add(file1)
     db.add(file2)

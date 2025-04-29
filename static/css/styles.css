@@ -140,3 +140,57 @@ nav ul li a:hover {
         padding: 10px;
     }
 }
+
+footer {
+    background-color: #f8f8f8;
+    text-align: center;
+    padding: 20px 10px;
+    border-top: 1px solid #ddd;
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items horizontally */
+    justify-content: center; /* Center items vertically */
+    gap: 15px; /* Add spacing between footer sections */
+}
+
+.footer-logo img {
+    margin-bottom: 10px;
+}
+
+.footer-social {
+    display: flex;
+    gap: 15px; /* Add spacing between social media icons */
+    justify-content: center; /* Center the icons */
+}
+
+.footer-social a {
+    color: #0077cc;
+    text-decoration: none;
+    font-size: 24px; /* Adjust icon size */
+}
+
+.footer-social a:hover {
+    color: #0056a3; /* Change color on hover */
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for smaller screens */
+    gap: 10px; /* Add spacing between links */
+    justify-content: center; /* Center the links */
+}
+
+.footer-links a {
+    color: #0077cc;
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+.footer-copyright {
+    font-size: 0.9em;
+    color: #666;
+}

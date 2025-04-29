@@ -9,6 +9,7 @@ class User(SQLModel, table=True):
     email: str = Field(max_length=50, index=True, unique=True)
     created_date: datetime = Field(default_factory=datetime.utcnow)
     hashed_password: str
+    verified: bool = Field(default=False)
 
     events: List["Event"] = Relationship(back_populates="user") #changed from Optional to List
     billings: List["Billing"] = Relationship(back_populates="user")
@@ -21,8 +22,8 @@ class Event(SQLModel, table=True):
     date: datetime
     welcome_message: Optional[str] = Field(default=None, max_length=250)
     storage_path: str
-    event_code: int
-    event_password: str
+    event_code: str = Field(max_length=4)  # Ensure it's a 4-character string
+    event_password: str = Field(max_length=4)  # Ensure it's a 4-character string
     pricing_id: int = Field(foreign_key="pricing.id")
 
     user: User = Relationship(back_populates="events")

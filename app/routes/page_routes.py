@@ -52,3 +52,18 @@ async def about(request: Request):
 async def help_center(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("help_center.html", {"request": request, "user": user})
+
+@router.get("/contact-us")
+async def contact_us(request: Request):
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("contact_us.html", {"request": request, "user": user})
+
+@router.get("/terms-and-conditions")
+async def terms_and_conditions(request: Request):
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("terms_and_conditions.html", {"request": request, "user": user})
+
+@router.get("/privacy-policy")
+async def privacy_policy(request: Request):
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("privacy_policy.html", {"request": request, "user": user})

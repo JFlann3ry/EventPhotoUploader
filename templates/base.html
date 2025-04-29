@@ -16,7 +16,19 @@
                 <li><a href="/pricing">Pricing</a></li>
                 <li><a href="/about">About</a></li>
                 <li><a href="/help-center">Help Center</a></li>
-                <li><a href="/sign-up">Sign Up</a> / <a href="/auth/login">Login</a></li>
+                {% if user %}
+                    <li>
+                        <a href="/auth/profile" title="Profile" style="padding: 0 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" style="vertical-align: middle;">
+                                <circle cx="12" cy="8" r="4" fill="#888"/>
+                                <ellipse cx="12" cy="18" rx="7" ry="4" fill="#888"/>
+                            </svg>
+                        </a>
+                    </li>
+                    <li><a href="/auth/logout" class="logout">Logout</a></li>
+                {% else %}
+                    <li><a href="/sign-up">Sign Up</a> / <a href="/auth/login">Login</a></li>
+                {% endif %}
             </ul>
         </nav>
     </header>

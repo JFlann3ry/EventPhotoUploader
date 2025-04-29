@@ -65,7 +65,7 @@ class Billing(SQLModel, table=True):
 
     user: User = Relationship(back_populates="billings")
     event: Event = Relationship(back_populates="billings")
-    pricing: Pricing = Relationship(back_populates="billings")
+    pricing: "Pricing" = Relationship(back_populates="billings")
 
 class EventStorage(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -92,11 +92,11 @@ class FileMetadata(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     file_name: str
     file_type: str
-    guest_id: Optional[int] = Field(default=None, foreign_key="guest.id")
+    guest_id: int = Field(foreign_key="guest.id")
     event_id: int = Field(foreign_key="event.id")
-    upload_datetime: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    upload_datetime: datetime = Field(default_factory=datetime.now) # Changed this line
     file_size: int
-    guest_device: Optional[str] = None
+    guest_device: Optional[str] = Field(default=None)  # Add this line
 
     event: Event = Relationship(back_populates="file_metadata")
     guest: Optional[Guest] = Relationship(back_populates="files_metadata")

@@ -54,48 +54,11 @@
     {% endif %}
     <h2>Share Your Event Upload Page</h2>
     <p>Scan or share this QR code to let guests upload photos to your event:</p>
-    <img src="/auth/event-qr" alt="Event QR Code" style="width:200px;height:200px;">
+    <a href="/upload/{{ event.id }}"><img src="/auth/event-qr" alt="Event QR Code" style="width:200px;height:200px;"></a>
     <br>
     <a href="/auth/events">Back to Event List</a>
 </div>
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
 <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
-<script>
-function showEditMode() {
-    document.getElementById('displayMode').style.display = 'none';
-    document.getElementById('editMode').style.display = '';
-    if (window.picker) {
-        picker.destroy();
-    }
-    window.picker = new Pikaday({
-        field: document.getElementById('event_date'),
-        format: 'YYYY-MM-DD', // <-- THIS IS CRITICAL
-        minDate: new Date(), // Disable past dates
-        toString(date, format) {
-            // Format date as YYYY-MM-DD for the backend
-            const day = ("0" + date.getDate()).slice(-2);
-            const month = ("0" + (date.getMonth() + 1)).slice(-2);
-            return date.getFullYear() + '-' + month + '-' + day;
-        },
-        parse(dateString, format) {
-            // Parse date from YYYY-MM-DD
-            const parts = dateString.split('-');
-            if (parts.length === 3) {
-                return new Date(parts[0], parts[1] - 1, parts[2]);
-            }
-            return new Date(dateString);
-        }
-    });
-}
-function hideEditMode() {
-    document.getElementById('displayMode').style.display = '';
-    document.getElementById('editMode').style.display = 'none';
-    if (window.picker) {
-        picker.destroy();
-    }
-}
-document.addEventListener('DOMContentLoaded', function() {
-    hideEditMode();
-});
-</script>
+<script src="/static/js/event_details.js"></script>
 {% endblock %}

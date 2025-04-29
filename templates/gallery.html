@@ -1,29 +1,56 @@
 {% extends "base.html" %}
-{% block head %}
-
-{% endblock %}
-{% block title %}Your Event Photos{% endblock %}
+{% block title %}Gallery - {{ selected_event.name if selected_event else "No Event" }}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/gallery.css">
+<link rel="stylesheet" href="/static/css/slideshow.css">
 <div class="gallery-page">
-    <h1>Your Event Photos</h1>
-    <a href="/auth/download-all" class="btn" style="margin-bottom: 20px; display: inline-block;">Download All Photos</a>
-    {% if files %}
+    <div class="container">
+        {% if events|length > 1 %}
+            <form method="get" action="/auth/gallery" style="margin-bottom: 20px;">
+                <label for="event_id"><strong>Select Event:</strong></label>
+                <select name="event_id" id="event_id" onchange="this.form.submit()">
+                    {% for event in events %}
+                        <option value="{{ event.id }}" {% if selected_event and event.id == selected_event.id %}selected{% endif %}>
+                            {{ event.name }} ({{ event.date|format_date }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
+        <h2>
+            {% if selected_event %}
+                Memories from {{ selected_event.name }}
+            {% else %}
+                No Event Selected
+            {% endif %}
+        </h2>
+        {% if files %}
+        <a href="/auth/download-all">Download All Photos</a>
         <div class="gallery-container">
-        {% for file in files %}
-            <div class="gallery-item">
-                {% if file.filename.endswith('.jpg') or file.filename.endswith('.jpeg') or file.filename.endswith('.png') or file.filename.endswith('.gif') %}
-                    <img src="{{ file.filepath }}" alt="{{ file.filename }}">
-                {% elif file.filename.endswith('.mp4') or file.filename.endswith('.mov') or file.filename.endswith('.webm') %}
-                    <video controls>
-                        <source src="{{ file.filepath }}">
-                    </video>
-                {% endif %}
-            </div>
-        {% endfor %}
+            {% for file in files %}
+                <div class="gallery-item">
+                    {% if file.filename.lower().endswith(('.mp4', '.mov', '.avi', '.webm', '.mkv')) %}
+                        <video src="{{ file.filepath }}" controls class="gallery-video gallery-item-media"></video>
+                    {% else %}
+                        <img src="{{ file.filepath }}" alt="{{ file.filename }}" class="gallery-img gallery-item-media">
+                    {% endif %}
+                </div>
+            {% endfor %}
         </div>
-    {% else %}
-        <p>No photos uploaded yet.</p>
-    {% endif %}
-    <a href="/auth/profile">Back to Profile</a>
+        {% else %}
+            <p>No photos or videos found for this event.</p>
+        {% endif %}
+        <a href="/auth/profile">Back to Profile</a>
+    </div>
 </div>
+
+<!-- Modal Structure -->
+<div id="modal" class="modal">
+    <span class="close" id="modalClose">&times;</span>
+    <div id="caption"></div>
+    <a class="prev" id="prevBtn">&#10094;</a>
+    <a class="next" id="nextBtn">&#10095;</a>
+</div>
+
+<script src="/static/js/slideshow.js"></script>
 {% endblock %}

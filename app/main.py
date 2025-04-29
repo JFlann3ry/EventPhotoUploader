@@ -14,23 +14,21 @@ from app.export_events import export_events_to_pdf
 from app.config import STORAGE_ROOT
 
 from app.template_env import templates
+import os
 
-# Initialize FastAPI app with lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     insert_dummy_event_types()
-    export_events_to_pdf()  # <-- Call the PDF export function here
+    export_events_to_pdf()
     yield
 
 app = FastAPI(lifespan=lifespan)
 
-# Mount static files for frontend assets
-app.mount(
-    "/static/events",
-    StaticFiles(directory=STORAGE_ROOT),
-    name="event_files"
-)
+# Mount uploaded media from a separate directory
+app.mount("/media", StaticFiles(directory=STORAGE_ROOT), name="media")
+# Mount the general static files (CSS, JS, images)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(event_router, prefix="/api")
@@ -40,10 +38,10 @@ app.include_router(page_router)
 
 @app.get("/")
 async def home(request: Request):
-    """
-    Serve the home page.
-    """
-    return templates.TemplateResponse("home.html", {"request": request})
+    # Import and use the same get_logged_in_user as in page_routes.py
+    from app.routes.page_routes import get_logged_in_user
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("home.html", {"request": request, "user": user})
 
 if __name__ == "__main__":
     import uvicorn

@@ -3,9 +3,8 @@
 {% block content %}
 <div class="container">
     <h1>Welcome, {{ user.first_name }} {{ user.last_name }}!</h1>
-    <p>Your email is: {{ user.email }}</p>
     <a href="/auth/gallery">View & Download Your Event Photos</a><br>
-    <a href="/auth/events">View & Edit Event Details</a><br>
+    <a href="/auth/events">View Your Events</a><br>
     <a href="/auth/logout">Logout</a>
 </div>
 {% endblock %}

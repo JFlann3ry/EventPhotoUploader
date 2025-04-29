@@ -10,7 +10,6 @@ from fastapi import Form
 import qrcode
 from io import BytesIO
 from fastapi.responses import StreamingResponse
-from app.config import STORAGE_ROOT
 import os
 from app.export_events import export_events_to_pdf
 import zipfile
@@ -18,6 +17,8 @@ import io
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
+from app.config import STORAGE_ROOT  # Import STORAGE_ROOT
+import re
 
 auth_router = APIRouter()
 
@@ -25,6 +26,18 @@ auth_router = APIRouter()
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_SECONDS = 3600
+
+def is_valid_password(password: str) -> bool:
+    # At least 6 characters, 1 number, 1 special character, 1 uppercase letter
+    if len(password) < 6:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    if not re.search(r"[^A-Za-z0-9]", password):
+        return False
+    return True
 
 @auth_router.get("/login")
 async def login_get(request: Request):
@@ -85,6 +98,11 @@ async def register_user(
     email: str = Form(...),
     password: str = Form(...)
 ):
+    if not is_valid_password(password):
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters long, contain at least one uppercase letter, one number, and one special character."
+        )
     with SessionLocal() as session:
         # Check for existing user by email
         statement = select(User).where(User.email == email)
@@ -114,21 +132,25 @@ async def register_user(
         # Create an Event for the new user
         event = Event(
             user_id=user.id,
-            name=None,
+            name="My Event Name",
             date=parsed_date,
-            welcome_message=None,
-            storage_path=f"{STORAGE_ROOT}/{user.id}",
-            event_code=0,  # Set a default or generate as needed
-            event_password="",  # Set a default or generate as needed
-            pricing_id=1  # Set a default or handle as needed
+            welcome_message="Welcome to our event! Please upload your favorite photos and memories here.",
+            storage_path="",  # <-- TEMPORARY, will update after commit
+            event_code=0,
+            event_password="",
+            pricing_id=1
         )
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+        event.storage_path = str(event.id)
         session.add(event)
         session.commit()
 
         return RedirectResponse(url="/auth/profile", status_code=303)
 
 @auth_router.get("/gallery")
-async def user_gallery(request: Request):
+async def user_gallery(request: Request, event_id: int = None):
     token = request.cookies.get("session_token")
     if not token:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -138,23 +160,42 @@ async def user_gallery(request: Request):
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.query(User).filter(User.id == user_id).first()
+        user = session.exec(select(User).filter(User.id == user_id)).first()
         if not user:
             return RedirectResponse(url="/auth/login", status_code=303)
-        event = session.query(Event).filter(Event.user_id == user_id).first()
+        events = session.exec(select(Event).filter(Event.user_id == user_id)).all()
+        # Determine which event to show
+        selected_event = None
+        if event_id:
+            selected_event = next((e for e in events if e.id == event_id), None)
+        else:
+            selected_event = events[0] if events else None
         files = []
-        if event:
-            event_folder = event.storage_path
-            if os.path.exists(event_folder):
-                for guest_id in os.listdir(event_folder):
-                    guest_folder = os.path.join(event_folder, guest_id)
+        seen_files = set()
+        if selected_event:
+            event_folder = selected_event.storage_path
+            full_event_path = os.path.join(STORAGE_ROOT, event_folder)
+            if os.path.exists(full_event_path):
+                for guest_id in os.listdir(full_event_path):
+                    guest_folder = os.path.join(full_event_path, guest_id)
                     if os.path.isdir(guest_folder):
                         for filename in os.listdir(guest_folder):
+                            relative_path = os.path.relpath(guest_folder, STORAGE_ROOT)
+                            filepath = os.path.join("/media", relative_path, filename)
+                            if filepath in seen_files:
+                                continue
+                            seen_files.add(filepath)
                             files.append({
                                 "filename": filename,
-                                "filepath": f"/static/events/{event.id}/{guest_id}/{filename}"
+                                "filepath": filepath
                             })
-    context = {"request": request, "user": user, "files": files}
+    context = {
+        "request": request,
+        "user": user,
+        "files": files,
+        "events": events,
+        "selected_event": selected_event
+    }
     return templates.TemplateResponse("gallery.html", context)
 
 @auth_router.get("/download/{file_id}")
@@ -249,7 +290,9 @@ async def update_event_details(
             event.date = parsed_date
             event.event_type_id = event_type_id
             event.welcome_message = welcome_message
-            event.storage_path = event_folder
+            # Do not overwrite storage_path unless you are intentionally moving files.
+            # If you must, use:
+            event.storage_path = str(event.id)
         else:
             event = Event(
                 user_id=user_id,
@@ -257,88 +300,19 @@ async def update_event_details(
                 date=parsed_date,
                 event_type_id=event_type_id,
                 welcome_message=welcome_message,
-                storage_path=event_folder,
+                storage_path="",  # <-- TEMPORARY, will update after commit
                 event_code=0,
                 event_password="",
                 pricing_id=1
             )
             session.add(event)
-        try:
             session.commit()
-        except SQLAlchemyError as e:
-            session.rollback()
-            print(f"DEBUG: Database error: {e}")
-            traceback.print_exc()  # Print the traceback
-            # Handle the error, e.g., show an error message to the user
-            context = {
-                "request": request,
-                "user": session.query(User).filter(User.id == user_id).first(),
-                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
-                "event_types": session.query(EventType).all(),
-                "error": "Failed to update event details. Please try again.",
-                "event_id": event_id
-            }
-            return templates.TemplateResponse("event_details.html", context)
-        if folder_created:
-            export_events_to_pdf()
-        return RedirectResponse(url=f"/auth/event-details/{event_id}", status_code=303)
+            session.refresh(event)
+            event.storage_path = str(event.id)
+            session.add(event)
+            session.commit()
 
-@auth_router.get("/event-qr")
-async def event_qr(request: Request):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    with SessionLocal() as session:
-        event = session.query(Event).filter(Event.user_id == user_id).first()
-        if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
-        upload_url = f"http://100.98.194.29:8000/upload/{event.id}"
-        qr = qrcode.make(upload_url)
-        buf = BytesIO()
-        qr.save(buf, format="PNG")
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="image/png")
-
-@auth_router.get("/download-all")
-async def download_all_photos(request: Request):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    with SessionLocal() as session:
-        event = session.query(Event).filter(Event.user_id == user_id).first()
-        if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
-        event_folder = event.storage_path
-        # Collect all file paths
-        file_paths = []
-        if os.path.exists(event_folder):
-            for guest_id in os.listdir(event_folder):
-                guest_folder = os.path.join(event_folder, guest_id)
-                if os.path.isdir(guest_folder):
-                    for filename in os.listdir(guest_folder):
-                        file_paths.append((guest_id, os.path.join(guest_folder, filename)))
-        # Create ZIP in memory
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-            for guest_id, file_path in file_paths:
-                arcname = f"{guest_id}/{os.path.basename(file_path)}"
-                zip_file.write(file_path, arcname=arcname)
-        zip_buffer.seek(0)
-        return StreamingResponse(
-            zip_buffer,
-            media_type="application/x-zip-compressed",
-            headers={"Content-Disposition": "attachment; filename=event_photos.zip"}
-        )
+    return RedirectResponse(url="/auth/events", status_code=303)
 
 @auth_router.get("/events")
 async def list_events(request: Request):
@@ -351,12 +325,8 @@ async def list_events(request: Request):
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.exec(select(User).filter(User.id == user_id)).first()
-        if not user:
-            return RedirectResponse(url="/auth/login", status_code=303)
-        events = session.exec(select(Event).filter(Event.user_id == user_id)).all()
-    context = {"request": request, "user": user, "events": events}
-    return templates.TemplateResponse("event_list.html", context)
+        events = session.exec(select(Event).where(Event.user_id == user_id)).all()
+    return templates.TemplateResponse("event_list.html", {"request": request, "events": events})
 
 @auth_router.get("/create-event")
 async def create_event_get(request: Request):
@@ -369,10 +339,8 @@ async def create_event_get(request: Request):
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.exec(select(User).filter(User.id == user_id)).first()
         event_types = session.exec(select(EventType)).all()
-    context = {"request": request, "user": user, "event_types": event_types}
-    return templates.TemplateResponse("create_event.html", context)
+    return templates.TemplateResponse("create_event.html", {"request": request, "event_types": event_types})
 
 @auth_router.post("/create-event")
 async def create_event_post(
@@ -380,7 +348,7 @@ async def create_event_post(
     name: str = Form(...),
     event_date: str = Form(...),
     event_type_id: int = Form(...),
-    welcome_message: str = Form(...),
+    welcome_message: str = Form(...)
 ):
     token = request.cookies.get("session_token")
     if not token:
@@ -391,31 +359,34 @@ async def create_event_post(
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.exec(select(User).filter(User.id == user_id)).first()
-        if not user:
-            return RedirectResponse(url="/auth/login", status_code=303)
-        # Parse event_date string to date object
         try:
             parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid event date format. Use YYYY-MM-DD.")
-        event_folder = os.path.join(STORAGE_ROOT, str(user_id))
-        folder_created = False
-        if not os.path.exists(event_folder):
-            os.makedirs(event_folder, exist_ok=True)
-            folder_created = True
+            event_types = session.exec(select(EventType)).all()
+            return templates.TemplateResponse(
+                "create_event.html",
+                {
+                    "request": request,
+                    "event_types": event_types,
+                    "error": "Invalid event date format. Use YYYY-MM-DD."
+                }
+            )
         event = Event(
             user_id=user_id,
             name=name,
             date=parsed_date,
             event_type_id=event_type_id,
             welcome_message=welcome_message,
-            storage_path=event_folder,
-            event_code=0,  # Set a default or generate as needed
-            event_password="",  # Set a default or generate as needed
-            pricing_id=1  # Set a default or handle as needed
+            storage_path="",  # Will update after commit
+            event_code=0,
+            event_password="",
+            pricing_id=1
         )
         session.add(event)
         session.commit()
         session.refresh(event)
+        event.storage_path = str(event.id)
+        session.add(event)
+        session.commit()
     return RedirectResponse(url="/auth/events", status_code=303)
+

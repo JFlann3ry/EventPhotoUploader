@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Your Events{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Your Events</h1>
+    {% if events %}
+        <ul>
+        {% for event in events %}
+            <li>
+                <a href="/auth/event-details/{{ event.id }}">{{ event.name }}</a>
+                ({{ event.date.strftime('%A %d %B %Y') if event.date else '' }})
+                &mdash;
+                <a href="/auth/gallery?event_id={{ event.id }}">View Gallery</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no events yet.</p>
+    {% endif %}
+    <a href="/auth/profile">Back to Profile</a>
+</div>
+{% endblock %}

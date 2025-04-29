@@ -18,12 +18,12 @@ upload_router = APIRouter()
 
 templates = Jinja2Templates(directory="templates")
 
-@upload_router.get("/{event_id}")
-async def guest_upload_form(request: Request, event_id: int):
+@upload_router.get("/{event_code}/{event_password}")
+async def guest_upload_form(request: Request, event_code: str, event_password: str):
     with Session(engine) as session:
-        event = session.query(Event).filter(Event.id == event_id).first()
+        event = session.query(Event).filter(Event.event_code == event_code, Event.event_password == event_password).first()
         if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
+            raise HTTPException(status_code=404, detail="Invalid event code or password")
     return templates.TemplateResponse("upload_form.html", {"request": request, "event": event})
 
 @upload_router.post("/{event_id}")

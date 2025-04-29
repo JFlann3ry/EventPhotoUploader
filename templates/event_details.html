@@ -11,39 +11,47 @@
 
             <!-- Display mode -->
             <div id="displayMode">
-                <strong>Event Name:</strong> {{ event.name if event else '' }}<br><br>
-                <strong>Event Date:</strong> {{ event.date | format_date if event and event.date else '' }}<br><br>
+                <strong>Event Name:</strong> {{ event.name }}<br><br>
+                <strong>Event Date:</strong> {{ event.date.strftime('%Y-%m-%d') }}<br><br>
                 <strong>Event Type:</strong>
                 {% for et in event_types %}
-                    {% if event and event.event_type_id == et.id %}
+                    {% if event.event_type_id == et.id %}
                         {{ et.event_type_name }}
                     {% endif %}
                 {% endfor %}
                 <br><br>
                 <strong>Welcome Message:</strong><br>
-                <div style="white-space: pre-line;">{{ event.welcome_message if event else '' }}</div>
+                <div style="white-space: pre-line;">{{ event.welcome_message }}</div>
                 <br>
+                <strong>Event Code:</strong> {{ event.event_code }}<br>
+                <strong>Event Password:</strong> {{ event.event_password }}<br><br>
+                <strong>QR Code:</strong><br>
+                <!-- Make the QR code clickable -->
+                <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">
+                    <img src="/auth/event-qr?event_id={{ event.id }}" alt="Event QR Code" style="width:200px;height:200px;">
+                </a>
+                <br><br>
                 <button type="button" id="editBtn" onclick="showEditMode()">Edit</button>
             </div>
 
             <!-- Edit mode -->
             <div id="editMode" style="display:none;">
                 <label for="name">Event Name:</label>
-                <input type="text" id="name" name="name" value="{{ event.name if event else '' }}" required>
+                <input type="text" id="name" name="name" value="{{ event.name }}" required>
                 <br><br>
                 <label for="event_date">Event Date:</label>
                 <input type="text" id="event_date" name="event_date" required
-                       value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}">
+                       value="{{ event.date.strftime('%Y-%m-%d') }}">
                 <br><br>
                 <label for="event_type_id">Event Type:</label>
                 <select name="event_type_id" id="event_type_id" required>
                     {% for et in event_types %}
-                        <option value="{{ et.id }}" {% if event and event.event_type_id == et.id %}selected{% endif %}>{{ et.event_type_name }}</option>
+                        <option value="{{ et.id }}" {% if event.event_type_id == et.id %}selected{% endif %}>{{ et.event_type_name }}</option>
                     {% endfor %}
                 </select>
                 <br><br>
                 <label for="welcome_message">Welcome Message:</label><br>
-                <textarea name="welcome_message" id="welcome_message" rows="4" cols="50">{{ event.welcome_message if event else '' }}</textarea>
+                <textarea name="welcome_message" id="welcome_message" rows="4" cols="50">{{ event.welcome_message }}</textarea>
                 <br><br>
                 <button type="submit" id="saveBtn">Save</button>
                 <button type="button" id="cancelBtn" onclick="hideEditMode()">Cancel</button>
@@ -52,13 +60,17 @@
     {% else %}
         <p>No event details found.</p>
     {% endif %}
-    <h2>Share Your Event Upload Page</h2>
-    <p>Scan or share this QR code to let guests upload photos to your event:</p>
-    <a href="/upload/{{ event.id }}"><img src="/auth/event-qr" alt="Event QR Code" style="width:200px;height:200px;"></a>
-    <br>
-    <a href="/auth/events">Back to Event List</a>
 </div>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
-<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
-<script src="/static/js/event_details.js"></script>
+
+<script>
+    function showEditMode() {
+        document.getElementById("displayMode").style.display = "none";
+        document.getElementById("editMode").style.display = "block";
+    }
+
+    function hideEditMode() {
+        document.getElementById("displayMode").style.display = "block";
+        document.getElementById("editMode").style.display = "none";
+    }
+</script>
 {% endblock %}

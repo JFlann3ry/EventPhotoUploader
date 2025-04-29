@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from contextlib import asynccontextmanager
+from datetime import datetime  # Import datetime
 
 from .routes.upload_routes import upload_router
 from .routes.auth_routes import auth_router
@@ -11,7 +12,7 @@ from .routes.page_routes import router as page_router
 from .database import init_db
 from app.dummy_data import insert_dummy_event_types
 from app.export_events import export_events_to_pdf
-from app.config import STORAGE_ROOT
+from app.config import STORAGE_ROOT, FACEBOOK_URL, INSTAGRAM_URL, TIKTOK_URL, WEBSITE_NAME  # Import WEBSITE_NAME
 
 from app.template_env import templates
 import os
@@ -42,6 +43,18 @@ async def home(request: Request):
     from app.routes.page_routes import get_logged_in_user
     user = get_logged_in_user(request)
     return templates.TemplateResponse("home.html", {"request": request, "user": user})
+
+@app.middleware("http")
+async def add_global_context(request: Request, call_next):
+    response = await call_next(request)
+    templates.env.globals.update({
+        "FACEBOOK_URL": FACEBOOK_URL,
+        "INSTAGRAM_URL": INSTAGRAM_URL,
+        "TIKTOK_URL": TIKTOK_URL,
+        "current_year": datetime.now().year,  # Pass the current year
+        "WEBSITE_NAME": WEBSITE_NAME,  # Pass the website name
+    })
+    return response
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Thank You for Verifying{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Thank You for Verifying</h1>
+    <p>Your email has been successfully verified. You will be redirected to the login page shortly.</p>
+    <p>If you are not redirected, <a href="/auth/login">click here to log in</a>.</p>
+</div>
+<script>
+    setTimeout(function() {
+        window.location.href = "/auth/login";
+    }, 5000); // Redirect after 5 seconds
+</script>
+{% endblock %}

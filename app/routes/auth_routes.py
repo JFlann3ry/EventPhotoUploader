@@ -4,7 +4,7 @@ from app.template_env import templates
 from sqlmodel import select
 import bcrypt, time, jwt
 from datetime import datetime, date
-from app.models import User, Event, FileMetadata, EventType
+from app.models import User, Event, FileMetadata, EventType, QRCode
 from app.database import SessionLocal
 from fastapi import Form
 import qrcode
@@ -17,8 +17,13 @@ import io
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
-from app.config import STORAGE_ROOT  # Import STORAGE_ROOT
+from app.config import STORAGE_ROOT  # Ensure STORAGE_ROOT is imported
+from app.config import BASE_URL  # Ensure BASE_URL is imported
+import random
+import string
 import re
+from app.profanity_filter import PROFANITY_LIST
+from app.utils import generate_verification_token, send_verification_email, verify_verification_token
 
 auth_router = APIRouter()
 
@@ -39,6 +44,18 @@ def is_valid_password(password: str) -> bool:
         return False
     return True
 
+def generate_unique_code(session, length=4):
+    """Generate a unique alphanumeric code that avoids profanity."""
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        # Check if the code is in the profanity list
+        if code in PROFANITY_LIST:
+            continue
+        # Check if the code already exists in the database
+        existing_event = session.exec(select(Event).where(Event.event_code == code)).first()
+        if not existing_event:
+            return code
+
 @auth_router.get("/login")
 async def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -55,6 +72,9 @@ async def login_post(
         user = results.first()
         if not user or not bcrypt.checkpw(password.encode("utf8"), user.hashed_password.encode("utf8")):
             raise HTTPException(status_code=400, detail="Invalid email or password.")
+        if not user.verified:
+            raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
+        
         # Generate session token using JWT
         payload = {
             "user_id": user.id,
@@ -92,9 +112,10 @@ async def logout():
 
 @auth_router.post("/sign-up")
 async def register_user(
+    request: Request,  # Add request as a parameter
     first_name: str = Form(...),
     last_name: str = Form(...), 
-    event_date: str = Form(...),  # expecting YYYY-MM-DD
+    event_date: str = Form(...),
     email: str = Form(...),
     password: str = Form(...)
 ):
@@ -123,31 +144,19 @@ async def register_user(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            hashed_password=hashed.decode("utf8")
+            hashed_password=hashed.decode("utf8"),
+            verified=False  # User is not verified yet
         )
         session.add(user)
         session.commit()
-        session.refresh(user)  # Get the new user's ID
+        session.refresh(user)
 
-        # Create an Event for the new user
-        event = Event(
-            user_id=user.id,
-            name="My Event Name",
-            date=parsed_date,
-            welcome_message="Welcome to our event! Please upload your favorite photos and memories here.",
-            storage_path="",  # <-- TEMPORARY, will update after commit
-            event_code=0,
-            event_password="",
-            pricing_id=1
-        )
-        session.add(event)
-        session.commit()
-        session.refresh(event)
-        event.storage_path = str(event.id)
-        session.add(event)
-        session.commit()
+        # Generate verification token and send email
+        token = generate_verification_token(email)
+        send_verification_email(email, token)
 
-        return RedirectResponse(url="/auth/profile", status_code=303)
+    # Render the account_created.html template
+    return templates.TemplateResponse("account_created.html", {"request": request})
 
 @auth_router.get("/gallery")
 async def user_gallery(request: Request, event_id: int = None):
@@ -360,6 +369,7 @@ async def create_event_post(
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
         try:
+            # Parse the event date
             parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
         except ValueError:
             event_types = session.exec(select(EventType)).all()
@@ -371,6 +381,12 @@ async def create_event_post(
                     "error": "Invalid event date format. Use YYYY-MM-DD."
                 }
             )
+        
+        # Generate unique event code and password
+        event_code = generate_unique_code(session)
+        event_password = generate_unique_code(session)
+
+        # Create the event
         event = Event(
             user_id=user_id,
             name=name,
@@ -378,15 +394,93 @@ async def create_event_post(
             event_type_id=event_type_id,
             welcome_message=welcome_message,
             storage_path="",  # Will update after commit
-            event_code=0,
-            event_password="",
+            event_code=event_code,
+            event_password=event_password,
             pricing_id=1
         )
         session.add(event)
         session.commit()
         session.refresh(event)
+
+        # Update the storage path and create the folder
         event.storage_path = str(event.id)
         session.add(event)
         session.commit()
-    return RedirectResponse(url="/auth/events", status_code=303)
+
+        # Create the storage folder
+        event_folder_path = Path(STORAGE_ROOT) / event.storage_path
+        event_folder_path.mkdir(parents=True, exist_ok=True)
+
+    return RedirectResponse(url=f"/auth/event-details/{event.id}", status_code=303)
+
+@auth_router.get("/event-qr")
+async def generate_qr_code(event_id: int):
+    with SessionLocal() as session:
+        event = session.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Use event code and password in the QR code URL
+        qr_url = f"{BASE_URL}/upload/{event.event_code}/{event.event_password}"
+
+        # Generate the QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+
+        # Save QR code to an in-memory buffer
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # Store QR code in the database
+        qr_code = session.query(QRCode).filter(QRCode.event_id == event_id).first()
+        if not qr_code:
+            qr_code = QRCode(event_id=event_id, qr_url=qr_url, scanned_count=0)
+            session.add(qr_code)
+            session.commit()
+        else:
+            qr_code.qr_url = qr_url  # Update URL if necessary
+            session.commit()
+
+        return StreamingResponse(buffer, media_type="image/png")
+
+@auth_router.get("/scan-qr/{event_id}")
+async def scan_qr_code(event_id: int):
+    with SessionLocal() as session:
+        # Retrieve the QR code entry for the event
+        qr_code = session.query(QRCode).filter(QRCode.event_id == event_id).first()
+        if not qr_code:
+            raise HTTPException(status_code=404, detail="QR Code not found")
+        
+        # Increment the scanned count
+        qr_code.scanned_count += 1
+        session.add(qr_code)  # Ensure the object is marked as updated
+        session.commit()  # Commit the changes to the database
+
+        # Redirect to the full URL stored in the database
+        return RedirectResponse(url=qr_code.qr_url)
+
+@auth_router.get("/verify-email")
+async def verify_email(token: str, request: Request):
+    email = verify_verification_token(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token.")
+    
+    with SessionLocal() as session:
+        user = session.exec(select(User).where(User.email == email)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+        
+        user.verified = True
+        session.add(user)
+        session.commit()
+
+    return templates.TemplateResponse("thank_you_verification.html", {"request": request})
 

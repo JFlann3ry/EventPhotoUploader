@@ -8,6 +8,7 @@ venv/
 ENV/
 env/
 .venv/
+.env
 
 # Distribution / packaging
 .Python
@@ -45,6 +46,12 @@ coverage.xml
 
 # SQLite database
 *.db
+.env
+__pycache__/
+*.pyc
+/alembic/versions/*
+/instance/
+
 
 # Jupyter Notebook
 .ipynb_checkpoints

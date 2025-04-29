@@ -26,25 +26,27 @@ async def guest_upload_form(request: Request, event_code: str, event_password: s
             raise HTTPException(status_code=404, detail="Invalid event code or password")
     return templates.TemplateResponse("upload_form.html", {"request": request, "event": event})
 
-@upload_router.post("/{event_id}")
+@upload_router.post("/{event_code}/{event_password}")
 async def guest_upload(
     request: Request,
-    event_id: int,
+    event_code: str,
+    event_password: str,
     guest_email: str = Form(...),
     file_upload: List[UploadFile] = File(...),
-    guest_device: str = Form(None)  # Add this line with a default value
+    guest_device: str = Form(None)
 ):
     from app.config import STORAGE_ROOT  # Ensure you use the correct storage root
 
     with Session(engine) as session:
-        event = session.query(Event).filter(Event.id == event_id).first()
+        # Validate event code and password
+        event = session.query(Event).filter(Event.event_code == event_code, Event.event_password == event_password).first()
         if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
+            raise HTTPException(status_code=404, detail="Invalid event code or password")
 
         # Find or create guest
-        guest = session.query(Guest).filter(Guest.guest_email == guest_email, Guest.event_id == event_id).first()
+        guest = session.query(Guest).filter(Guest.guest_email == guest_email, Guest.event_id == event.id).first()
         if not guest:
-            guest = Guest(guest_email=guest_email, event_id=event_id)
+            guest = Guest(guest_email=guest_email, event_id=event.id)
             session.add(guest)
             session.commit()
             session.refresh(guest)
@@ -76,13 +78,13 @@ async def guest_upload(
                     guest_id=guest.id,
                     event_id=event.id,
                     file_size=file_size,
-                    guest_device=guest_device  # Add this line
+                    guest_device=guest_device
                 )
                 session.add(file_metadata)
-                session.commit()  # Commit inside the loop
+                session.commit()
             except Exception as e:
                 print(f"Error saving file metadata: {e}")
-                session.rollback()  # Rollback in case of error
+                session.rollback()
                 raise HTTPException(status_code=500, detail="Failed to save file metadata")
 
     return templates.TemplateResponse(

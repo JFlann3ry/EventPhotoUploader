@@ -3,25 +3,35 @@
 {% block content %}
 <div class="container">
     <h1>Create New Event</h1>
-    <form method="post" action="/auth/create-event">
+    <form method="post" action="/auth/create-event" id="createEventForm">
         <label for="name">Event Name:</label>
-        <input type="text" id="name" name="name" required>
-        <br><br>
+        <input type="text" id="name" name="name" placeholder="Enter event name" required>
+
         <label for="event_date">Event Date:</label>
-        <input type="date" id="event_date" name="event_date" required>
-        <br><br>
+        <input
+            type="text"
+            id="event_date"
+            autocomplete="off"
+            placeholder="Select event date"
+        >
+        <input type="hidden" name="event_date" id="event_date_hidden">
+
         <label for="event_type_id">Event Type:</label>
         <select name="event_type_id" id="event_type_id" required>
             {% for et in event_types %}
                 <option value="{{ et.id }}">{{ et.event_type_name }}</option>
             {% endfor %}
         </select>
-        <br><br>
-        <label for="welcome_message">Welcome Message:</label><br>
-        <textarea name="welcome_message" id="welcome_message" rows="4" cols="50"></textarea>
-        <br><br>
+
+        <label for="welcome_message">Welcome Message:</label>
+        <textarea name="welcome_message" id="welcome_message" placeholder="Enter a welcome message"></textarea>
+
         <button type="submit">Create Event</button>
     </form>
     <a href="/auth/events">Back to Event List</a>
 </div>
+
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+<script src="/static/js/event_date_picker.js"></script>
 {% endblock %}

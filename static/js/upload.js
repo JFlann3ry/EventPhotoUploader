@@ -1,35 +1,66 @@
 document.getElementById('uploadForm').onsubmit = function(event) {
     event.preventDefault();
 
-    // Retrieve event_slug and guest_id from hidden fields if needed (update if you use them)
-    var eventSlug = document.getElementById('event_slug') ? document.getElementById('event_slug').value : '';
-    var guestId = document.getElementById('guest_id') ? document.getElementById('guest_id').value : '';
+    const emailInput = document.getElementById('guest_email');
+    const fileInput = document.getElementById('file_upload');
+    const emailError = document.getElementById('emailError');
+    const fileError = document.getElementById('fileError');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercentage = document.getElementById('progressPercentage');
+    const uploadMessage = document.getElementById('uploadMessage');
+
+    // Reset errors and progress
+    emailError.textContent = '';
+    fileError.textContent = '';
+    progressContainer.style.display = 'none';
+    progressBar.style.width = '0%';
+    progressPercentage.textContent = '0%';
+    uploadMessage.style.display = 'none';
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailInput.value)) {
+        emailError.textContent = 'Please enter a valid email address.';
+        return;
+    }
+
+    // Validate file input
+    if (fileInput.files.length === 0) {
+        fileError.textContent = 'Please select at least one file to upload.';
+        return;
+    }
 
     // Create FormData object
-    var formData = new FormData(document.getElementById('uploadForm'));
+    const formData = new FormData(document.getElementById('uploadForm'));
 
     // Prepare the XMLHttpRequest
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', `/upload/${eventSlug}/${guestId}`, true);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', window.location.pathname, true);
 
     // Show the progress bar container on upload start
-    document.getElementById('progressContainer').style.display = 'block';
+    progressContainer.style.display = 'block';
 
     xhr.upload.addEventListener('progress', function(e) {
         if (e.lengthComputable) {
-            var percent = (e.loaded / e.total) * 100;
-            document.getElementById('progressBar').style.width = percent + '%';
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.style.width = percent + '%';
+            progressPercentage.textContent = Math.round(percent) + '%';
         }
     });
 
     xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
                 // Hide progress bar and show success message
-                document.getElementById('progressContainer').style.display = 'none';
-                document.getElementById('uploadSuccess').style.display = 'block';
+                uploadMessage.style.display = 'block';
+                uploadMessage.textContent = 'Upload successful!';
+                uploadMessage.style.color = 'green';
             } else {
-                alert('Upload failed!');
+                // Show failure message
+                uploadMessage.style.display = 'block';
+                uploadMessage.textContent = 'Upload failed. Please try again.';
+                uploadMessage.style.color = 'red';
             }
         }
     };

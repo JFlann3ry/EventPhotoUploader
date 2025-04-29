@@ -13,6 +13,7 @@ from .database import init_db
 from app.dummy_data import insert_dummy_event_types
 from app.export_events import export_events_to_pdf
 from app.config import STORAGE_ROOT, FACEBOOK_URL, INSTAGRAM_URL, TIKTOK_URL, WEBSITE_NAME  # Import WEBSITE_NAME
+from .routes.gallery_routes import gallery_router    # add this import
 
 from app.template_env import templates
 import os
@@ -31,10 +32,11 @@ app.mount("/media", StaticFiles(directory=STORAGE_ROOT), name="media")
 # Mount the general static files (CSS, JS, images)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Include routers
-app.include_router(event_router, prefix="/api")
-app.include_router(upload_router, prefix="/upload")
-app.include_router(auth_router, prefix="/auth")
+# include your API routers
+app.include_router(event_router,   prefix="/api")
+app.include_router(gallery_router, prefix="/api")  # ← register your gallery endpoints
+app.include_router(upload_router,  prefix="/upload")
+app.include_router(auth_router,    prefix="/auth")
 app.include_router(page_router)
 
 @app.get("/")

@@ -3,33 +3,35 @@
 {% block content %}
 <div class="container">
     <h2>Upload Your Photos</h2>
-    {% if success %}
-        <p style="color:green;">Upload successful!</p>
-    {% endif %}
     <form method="post" enctype="multipart/form-data" id="uploadForm">
         <label for="guest_email">Your Email:</label>
-        <input type="email" name="guest_email" required><br><br>
+        <input type="email" name="guest_email" id="guest_email" placeholder="Enter your email" required>
+        <div id="emailError" class="error-message"></div>
 
         <input type="hidden" name="guest_device" id="guest_device">
 
         <label for="file_upload">Select Photos:</label>
-        <input type="file" name="file_upload" multiple required><br><br>
+        <input type="file" name="file_upload" id="file_upload" multiple required>
+        <div id="fileError" class="error-message"></div>
 
         <button type="submit">Upload</button>
+
+        <!-- Progress bar inside the form -->
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar" id="progressBar">
+                <span id="progressPercentage">0%</span>
+            </div>
+        </div>
+
+        <!-- Success/Failure message inside the form -->
+        <div id="uploadMessage" class="upload-message" style="display: none;"></div>
     </form>
-    <!-- Progress bar container -->
-    <div class="progress" id="progressContainer" style="display: none; margin-top: 15px;">
-        <div class="progress-bar" id="progressBar" style="height: 20px; background-color: #0077cc; width: 0%;"></div>
-    </div>
-    <!-- Success message placeholder -->
-    <div id="uploadSuccess" style="display: none; color: green; margin-top: 10px;">
-        Upload successful!
-    </div>
 </div>
 
+<script src="/static/js/upload.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Device info detection already present:
+    // Device info detection
     function getDeviceInfo() {
         const userAgent = navigator.userAgent;
         let device = "Unknown";

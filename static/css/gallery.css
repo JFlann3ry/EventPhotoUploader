@@ -3,46 +3,77 @@
     background-color: #f8f9fa; /* Light background */
 }
 
+/* Gallery Container - Basic styling, Masonry handles layout */
 .gallery-container {
-    column-count: 3;
-    column-gap: 15px;
-    /* Optional: adjust with media queries for responsiveness */
+    margin: 20px auto; /* Center container if needed */
+    /* Optional: max-width: 1200px; */
 }
 
+/* Clear floats for container if items float (not needed if using position: absolute) */
+.gallery-container::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+
+/* Gallery Item - Define width based on columns */
 .gallery-item {
-    break-inside: avoid;
-    margin-bottom: 15px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    /* Adjust width based on desired columns and gap */
+    /* Example: 4 columns with ~10px gap -> width ~24% */
+    width: 24%;
+    margin-bottom: 10px; /* Vertical gap */
+    position: relative; /* Needed if Masonry uses absolute positioning */
+    overflow: hidden;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Remove Grid/Column properties */
 }
 
-.gallery-item:hover {
-    transform: scale(1.03);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-}
+/* Remove large item class */
+/* .gallery-item-large { ... } */
 
-.gallery-item img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 12px;
-}
-
-/* Responsive adjustments */
-@media screen and (max-width: 768px) {
-    .gallery-container {
-         column-count: 2;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .gallery-container {
-         column-count: 1;
-    }
-}
-
+/* Ensure media fills the gallery item */
+.gallery-img,
 .gallery-video {
     width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 12px;
+    height: auto; /* Let height be determined by aspect ratio */
+    display: block; /* Remove extra space below images */
+    border-radius: 5px; /* Apply radius to media itself */
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.gallery-img:hover,
+.gallery-video:hover {
+    transform: scale(1.02);
+}
+
+/* Loading Indicator */
+.loading {
+    text-align: center;
+    font-size: 1em;
+    color: #555;
+    margin-top: 20px;
+    width: 100%; /* Span full width */
+    clear: both; /* Ensure it's below floated items */
+}
+
+/* Responsive adjustments for item width */
+@media (max-width: 1200px) {
+    .gallery-item {
+        width: 31%; /* ~3 columns */
+    }
+}
+
+@media (max-width: 768px) {
+    .gallery-item {
+        width: 48%; /* ~2 columns */
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-item {
+        width: 98%; /* ~1 column */
+    }
 }

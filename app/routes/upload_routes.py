@@ -1,30 +1,75 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
-from sqlmodel import Session
-from pathlib import Path
-import uuid
-import aiofiles
-from datetime import datetime
-from typing import List
-
+from sqlmodel import Session, select
 from ..models import Event, FileMetadata, Guest
 from ..database import engine
 from ..utils import validate_token
-import os
-from app.config import STORAGE_ROOT
+from pathlib import Path
+import aiofiles, os, subprocess, shutil, json
+from datetime import datetime
+from PIL import Image, ExifTags
 
 upload_router = APIRouter()
-
 templates = Jinja2Templates(directory="templates")
+
+# ─── Helpers ─────────────────────────────────────────────────────────────
+def extract_photo_time(path: str) -> datetime | None:
+    try:
+        img = Image.open(path)
+        exif = img._getexif() or {}
+        tag_map = {ExifTags.TAGS.get(k, k): v for k, v in exif.items()}
+        dt = tag_map.get("DateTimeOriginal") or tag_map.get("DateTime")
+        return datetime.strptime(dt, "%Y:%m:%d %H:%M:%S") if dt else None
+    except:
+        return None
+
+def extract_video_time(path: str) -> datetime | None:
+    if shutil.which("ffprobe") is None:
+        return None
+    try:
+        cmd = [
+            "ffprobe", "-v", "quiet", "-print_format", "json",
+            "-show_entries", "format_tags=creation_time", path
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            return None
+        info = json.loads(proc.stdout or "{}")
+        ts = info.get("format", {}).get("tags", {}).get("creation_time")
+        if not ts:
+            return None
+        ts = ts.rstrip("Z")
+        return datetime.fromisoformat(ts)
+    except Exception:
+        return None
+
+def transcode_to_mp4(input_path: str, output_path: str) -> bool:
+    cmd = [
+        "ffmpeg", "-i", input_path,
+        "-c:v", "libx264", "-c:a", "aac", "-strict", "experimental",
+        "-movflags", "+faststart",
+        "-y",  # Overwrite output
+        output_path
+    ]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return result.returncode == 0
+# ────────────────────────────────────────────────────────────────────────
 
 @upload_router.get("/{event_code}/{event_password}")
 async def guest_upload_form(request: Request, event_code: str, event_password: str):
     with Session(engine) as session:
-        event = session.query(Event).filter(Event.event_code == event_code, Event.event_password == event_password).first()
+        event = session.exec(
+            select(Event).where(
+                Event.event_code == event_code,
+                Event.event_password == event_password
+            )
+        ).first()
         if not event:
             raise HTTPException(status_code=404, detail="Invalid event code or password")
-    return templates.TemplateResponse("upload_form.html", {"request": request, "event": event})
+    return templates.TemplateResponse(
+        "upload_form.html",
+        {"request": request, "event": event}
+    )
 
 @upload_router.post("/{event_code}/{event_password}")
 async def guest_upload(
@@ -32,60 +77,70 @@ async def guest_upload(
     event_code: str,
     event_password: str,
     guest_email: str = Form(...),
-    file_upload: List[UploadFile] = File(...),
+    file_upload: list[UploadFile] = File(...),
     guest_device: str = Form(None)
 ):
-    from app.config import STORAGE_ROOT  # Ensure you use the correct storage root
+    from app.config import STORAGE_ROOT
 
     with Session(engine) as session:
-        # Validate event code and password
-        event = session.query(Event).filter(Event.event_code == event_code, Event.event_password == event_password).first()
+        # validate event
+        event = session.exec(
+            select(Event).where(
+                Event.event_code == event_code,
+                Event.event_password == event_password
+            )
+        ).first()
         if not event:
             raise HTTPException(status_code=404, detail="Invalid event code or password")
 
-        # Find or create guest
-        guest = session.query(Guest).filter(Guest.guest_email == guest_email, Guest.event_id == event.id).first()
+        # find or create guest
+        guest = session.exec(
+            select(Guest).where(
+                Guest.guest_email == guest_email,
+                Guest.event_id == event.id
+            )
+        ).first()
         if not guest:
             guest = Guest(guest_email=guest_email, event_id=event.id)
             session.add(guest)
             session.commit()
             session.refresh(guest)
 
-        # Create event folder if it doesn't exist
-        event_folder_path = Path(STORAGE_ROOT) / event.storage_path
-        event_folder_path.mkdir(parents=True, exist_ok=True)
-
-        # Create guest folder inside the event folder
-        guest_folder = event_folder_path / str(guest.id)
+        # ensure storage directories exist
+        event_folder = Path(STORAGE_ROOT) / event.storage_path
+        event_folder.mkdir(parents=True, exist_ok=True)
+        guest_folder = event_folder / str(guest.id)
         guest_folder.mkdir(parents=True, exist_ok=True)
 
-        # Save each uploaded file
+        # process uploads
         for upload in file_upload:
-            file_location = guest_folder / upload.filename
-            async with aiofiles.open(file_location, "wb") as buffer:
-                content = await upload.read()
-                await buffer.write(content)
-            print(f"Saved file to: {file_location}")
+            dest = guest_folder / upload.filename
+            async with aiofiles.open(dest, "wb") as buf:
+                await buf.write(await upload.read())
 
-            # Get file size
-            file_size = os.path.getsize(file_location)
+            full_path = str(dest)
+            ct = None
+            file_name_to_store = upload.filename
+            file_type_to_store = upload.content_type
 
-            # Store file metadata in the database
-            try:
-                file_metadata = FileMetadata(
-                    file_name=upload.filename,
-                    file_type=upload.content_type,
-                    guest_id=guest.id,
-                    event_id=event.id,
-                    file_size=file_size,
-                    guest_device=guest_device
-                )
-                session.add(file_metadata)
-                session.commit()
-            except Exception as e:
-                print(f"Error saving file metadata: {e}")
-                session.rollback()
-                raise HTTPException(status_code=500, detail="Failed to save file metadata")
+            if upload.content_type.startswith("image/"):
+                ct = extract_photo_time(full_path)
+            elif upload.content_type.startswith("video/"):
+                ct = extract_video_time(full_path)
+                # No transcoding, just store as-is
+
+            size = os.path.getsize(full_path)
+            meta = FileMetadata(
+                file_name=file_name_to_store,
+                file_type=file_type_to_store,
+                guest_id=guest.id,
+                event_id=event.id,
+                file_size=size,
+                guest_device=guest_device,
+                capture_time=ct
+            )
+            session.add(meta)
+            session.commit()
 
     return templates.TemplateResponse(
         "upload_form.html",

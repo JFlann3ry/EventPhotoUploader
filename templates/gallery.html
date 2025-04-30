@@ -22,22 +22,22 @@
         {% if files %}
         <a href="/auth/download-all">Download All Photos</a>
         <div id="gallery" class="gallery-container">
-            {% for file in files %}
-            <div class="gallery-item" data-size="{{ 'large' if loop.index is divisibleby(3) else 'small' }}">
-               <img src="{{ file.filepath }}"
-                    alt="{{ file.filename }}"
-                    loading="lazy"
-                    class="gallery-item-media">
-            </div>
-            {% endfor %}
+          {% for file in files %}
+  <div class="gallery-item" data-size="{{ 'large' if loop.index is divisibleby(3) else 'small' }}">
+    {% if file.is_video %}
+      <video src="{{ file.filepath }}" class="gallery-item-media" controls onerror="alert('Video failed to load. This format may not be supported by your browser.');"></video>
+    {% else %}
+      <img src="{{ file.filepath }}" alt="{{ file.filename }}" loading="lazy" class="gallery-item-media">
+    {% endif %}
+  </div>
+{% endfor %}
         </div>
-        <div id="loading" class="loading" style="display: none;">Loading more photos...</div>
-        {% else %}
-            <p>No photos or videos found for this event.</p>
+
         {% endif %}
         <a href="/auth/profile">Back to Profile</a>
-    </div>
+
 </div>
+<div id="loading" style="display:none;text-align:center;">Loading...</div>
 
 <!-- Modal Structure -->
 <div id="modal" class="modal">

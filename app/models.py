@@ -10,8 +10,9 @@ class User(SQLModel, table=True):
     created_date: datetime = Field(default_factory=datetime.utcnow)
     hashed_password: str
     verified: bool = Field(default=False)
+    marked_for_deletion: bool = Field(default=False)  # <-- Add this line
 
-    events: List["Event"] = Relationship(back_populates="user") #changed from Optional to List
+    events: List["Event"] = Relationship(back_populates="user")
     billings: List["Billing"] = Relationship(back_populates="user")
 
 class Event(SQLModel, table=True):
@@ -96,6 +97,7 @@ class FileMetadata(SQLModel, table=True):
     guest_id: int = Field(foreign_key="guest.id")
     event_id: int = Field(foreign_key="event.id")
     upload_datetime: datetime = Field(default_factory=datetime.now) # Changed this line
+    capture_time: datetime | None = Field(default=None, index=True)
     file_size: int
     guest_device: Optional[str] = Field(default=None)  # Add this line
 

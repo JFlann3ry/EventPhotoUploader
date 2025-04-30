@@ -5,16 +5,7 @@
     <h1>Sign Up</h1>
     <form id="signupForm" method="post" action="/auth/sign-up">
         <input type="text" name="first_name" placeholder="First Name" required><br>
-        <input type="text" name="last_name" placeholder="Last Name" required><br> <!-- Add this line -->
-        <label for="event_date">Event Date:</label>
-        <input
-            type="text"
-            id="event_date"
-            required
-            autocomplete="off"
-            style="background: url('https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/svgs/solid/calendar-days.svg') no-repeat right 10px center/20px 20px, #fff;"
-        >
-        <input type="hidden" name="event_date" id="event_date_hidden">
+        <input type="text" name="last_name" placeholder="Last Name" required><br>
         <label for="email">Email:</label>
         <input type="email" name="email" id="email" required>
         <div id="emailHelp" style="color: #b00; font-size: 0.95em; margin-bottom: 10px;"></div>
@@ -30,8 +21,5 @@
     </form>
     <a href="/">Back to Home</a>
 </div>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
-<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
 <script src="/static/js/password_validation.js"></script>
-<script src="/static/js/event_date_picker.js"></script>
 {% endblock %}

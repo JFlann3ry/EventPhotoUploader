@@ -1,46 +1,67 @@
 {% extends "base.html" %}
 {% block title %}Event Details{% endblock %}
 {% block content %}
-<div class="container">
+<div class="container event-details-container">
     <h1>Event Details</h1>
     {% if event %}
         <form method="post" action="/auth/event-details/{{ event.id }}" id="eventDetailsForm">
             {% if error %}
             <div class="error" style="color:red;">{{ error }}</div>
             {% endif %}
+            {% if success %}
+            <div class="success-message" role="status" aria-live="polite" style="color:green; margin-bottom:1em;">
+                Event details updated successfully!
+            </div>
+            {% endif %}
 
             <!-- Display mode -->
             <div id="displayMode">
-                <strong>Event Name:</strong> {{ event.name }}<br><br>
-                <strong>Event Date:</strong> {{ event.date.strftime('%Y-%m-%d') }}<br><br>
-                <strong>Event Type:</strong>
-                {% for et in event_types %}
-                    {% if event.event_type_id == et.id %}
-                        {{ et.event_type_name }}
-                    {% endif %}
-                {% endfor %}
-                <br><br>
-                <strong>Welcome Message:</strong><br>
-                <div style="white-space: pre-line;">{{ event.welcome_message }}</div>
-                <br>
-                <strong>Event Code:</strong> {{ event.event_code }}<br>
-                <strong>Event Password:</strong> {{ event.event_password }}<br><br>
-                <strong>QR Code:</strong><br>
-                <!-- Make the QR code clickable -->
-                <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">
-                    <img src="/auth/event-qr?event_id={{ event.id }}" alt="Event QR Code" style="width:200px;height:200px;">
-                </a>
-                <br><br>
-                <button type="button" id="editBtn" onclick="showEditMode()">Edit</button>
+                <section class="event-section">
+                    <h2>Event Info</h2>
+                    <div><strong>Name:</strong> {{ event.name }}</div>
+                    <div><strong>Date:</strong> {{ event.date | format_date }}</div>
+                    <div><strong>Type:</strong>
+                        {% for et in event_types %}
+                            {% if event.event_type_id == et.id %}
+                                {{ et.event_type_name }}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div><strong>Welcome Message:</strong>
+                        <div style="white-space: pre-line;">{{ event.welcome_message }}</div>
+                    </div>
+                </section>
+                <section class="event-section">
+                    <h2>Access Details</h2>
+                    <div><strong>Event Code:</strong> {{ event.event_code }}</div>
+                    <div>
+                        <strong>Event Password:</strong>
+                        <span id="eventPassword" style="letter-spacing:2px;">{{ event.event_password }}</span>
+                    </div>
+                </section>
+                <section class="event-section" style="text-align:center;">
+                    <h2>QR Code</h2>
+                    <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">
+                        <img src="/auth/event-qr?event_id={{ event.id }}" alt="Event QR Code" class="qr-img">
+                    </a>
+                    <div style="font-size:0.95em;">Scan to upload</div>
+                </section>
+                <div style="text-align:center; margin-top: 2em;">
+                    <button type="button" id="editBtn" onclick="showEditMode()" class="primary-btn" aria-label="Edit event details">Edit</button>
+                </div>
             </div>
 
             <!-- Edit mode -->
             <div id="editMode" style="display:none;">
+                <h2>Edit Event</h2>
                 <label for="name">Event Name:</label>
-                <input type="text" id="name" name="name" value="{{ event.name }}" required>
+                <input type="text" id="name" name="name" value="{{ event.name }}" required aria-required="true">
+                {% if field_errors.name %}
+                    <div class="error-message" role="alert">{{ field_errors.name }}</div>
+                {% endif %}
                 <br><br>
                 <label for="event_date">Event Date:</label>
-                <input type="text" id="event_date" name="event_date" required
+                <input type="date" id="event_date" name="event_date" required
                        value="{{ event.date.strftime('%Y-%m-%d') }}">
                 <br><br>
                 <label for="event_type_id">Event Type:</label>
@@ -53,24 +74,13 @@
                 <label for="welcome_message">Welcome Message:</label><br>
                 <textarea name="welcome_message" id="welcome_message" rows="4" cols="50">{{ event.welcome_message }}</textarea>
                 <br><br>
-                <button type="submit" id="saveBtn">Save</button>
-                <button type="button" id="cancelBtn" onclick="hideEditMode()">Cancel</button>
+                <button type="submit" id="saveBtn" class="primary-btn" aria-label="Save event details">Save</button>
+                <button type="button" id="cancelBtn" onclick="hideEditMode()" class="secondary-btn" aria-label="Cancel editing">Cancel</button>
             </div>
         </form>
     {% else %}
         <p>No event details found.</p>
     {% endif %}
 </div>
-
-<script>
-    function showEditMode() {
-        document.getElementById("displayMode").style.display = "none";
-        document.getElementById("editMode").style.display = "block";
-    }
-
-    function hideEditMode() {
-        document.getElementById("displayMode").style.display = "block";
-        document.getElementById("editMode").style.display = "none";
-    }
-</script>
+<script src="/static/js/event_details.js"></script>
 {% endblock %}

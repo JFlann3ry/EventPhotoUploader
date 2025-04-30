@@ -1,10 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Your Profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block content %}
-<div class="container">
-    <h1>Welcome, {{ user.first_name }} {{ user.last_name }}!</h1>
-    <a href="/auth/gallery">View & Download Your Event Photos</a><br>
-    <a href="/auth/events">View Your Events</a><br>
-    <a href="/auth/logout">Logout</a>
+<div class="container" style="max-width: 500px; margin: 40px auto;">
+    <div class="profile-card">
+        <img src="/static/images/profile-placeholder.png" alt="Profile">
+        <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+        <p>{{ user.email }}</p>
+        <hr>
+        <div class="profile-actions">
+            <a href="/auth/gallery" class="primary-btn">View & Download Event Photos</a>
+            <a href="/auth/events" class="secondary-btn">View Your Events</a>
+        </div>
+        <a href="/auth/logout" class="logout">Logout</a>
+        <hr>
+        <a href="/auth/delete-account" class="delete-account">Delete Account</a>
+    </div>
 </div>
 {% endblock %}

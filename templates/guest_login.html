@@ -1,13 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Guest Login - Event Photo Uploader{% endblock %}
+{% block title %}Guest Login - {{ WEBSITE_NAME }}{% endblock %}
 {% block content %}
-<div class="login-container">
-    <h2>Guest Login</h2>
-    <form method="post" action="/guest-login">
-        <input type="text" name="guest_code" placeholder="Guest Code" required><br>
-        <input type="password" name="password" placeholder="Password" required><br>
-        <button type="submit">Login as Guest</button>
+<div class="container" style="max-width: 400px; margin: 40px auto;">
+    <h1>Guest Login</h1>
+    {% if error %}
+      <div class="error-message" role="alert" aria-live="polite">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/guest-login" id="guestLoginForm">
+        <label for="guest_code">Event Code:</label>
+        <input type="text" name="guest_code" id="guest_code" placeholder="Event Code" required autocomplete="off">
+
+        <label for="password">Event Password:</label>
+        <input type="password" name="password" id="password" placeholder="Password" required autocomplete="off">
+
+        <button type="submit" class="primary-btn" style="width:100%; margin-top:16px;">Login to upload</button>
     </form>
-    <a href="/">Back to Home</a>
+    <a href="/" style="display:block; margin-top:16px;">Back to Home</a>
 </div>
 {% endblock %}

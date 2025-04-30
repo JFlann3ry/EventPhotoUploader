@@ -3,6 +3,31 @@
 {% block content %}
 <div class="container">
     <h1>Contact Us</h1>
-    <p>If you have any questions, feel free to reach out to us at support@example.com.</p>
+    {% if success %}
+        <div class="success-message">{{ success }}</div>
+    {% endif %}
+    <form method="post" action="/contact-us" id="contactForm">
+        <label for="full_name">Full Name:</label>
+        <input type="text" name="full_name" id="full_name" required>
+
+        <label for="email">Your Email:</label>
+        <input type="email" name="email" id="email" required>
+
+        <label for="topic">Topic:</label>
+        <select name="topic" id="topic" required>
+            <option value="">Select a topic</option>
+            <option value="General Inquiry">General Inquiry</option>
+            <option value="Account Support">Account Support</option>
+            <option value="Event Question">Event Question</option>
+            <option value="Technical Issue">Technical Issue</option>
+            <option value="Feedback">Feedback</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label for="message">Message:</label>
+        <textarea name="message" id="message" rows="5" required></textarea>
+
+        <button type="submit" class="primary-btn">Send Message</button>
+    </form>
 </div>
 {% endblock %}

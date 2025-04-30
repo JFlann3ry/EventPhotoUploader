@@ -3,6 +3,68 @@
 {% block content %}
 <div class="container">
     <h1>Privacy Policy</h1>
-    <p>Learn how we handle your data and protect your privacy.</p>
+    <p>Last updated: {{ current_year }}</p>
+
+    <h2>1. Introduction</h2>
+    <p>
+        {{ WEBSITE_NAME }} ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our website and services.
+    </p>
+
+    <h2>2. Information We Collect</h2>
+    <ul>
+        <li><strong>Personal Information:</strong> Name, email address, and any information you provide when contacting us, signing up, or uploading photos.</li>
+        <li><strong>Event Data:</strong> Photos, videos, and metadata you upload to events.</li>
+        <li><strong>Device Information:</strong> Device type and browser information (for troubleshooting and analytics).</li>
+        <li><strong>Usage Data:</strong> IP address, access times, and pages viewed (for security and analytics).</li>
+        <li><strong>Cookies:</strong> We use cookies to maintain sessions and improve user experience.</li>
+    </ul>
+
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+        <li>To provide and improve our services.</li>
+        <li>To communicate with you (e.g., account notifications, support, event updates).</li>
+        <li>To process uploads and manage events.</li>
+        <li>To ensure security and prevent fraud.</li>
+        <li>To comply with legal obligations.</li>
+    </ul>
+
+    <h2>4. How We Share Your Information</h2>
+    <ul>
+        <li>With event organizers (if you upload to their event).</li>
+        <li>With third-party service providers (e.g., email, analytics, storage) as needed to operate the service.</li>
+        <li>With law enforcement or authorities if required by law.</li>
+        <li>We do not sell your personal information.</li>
+    </ul>
+
+    <h2>5. Data Security</h2>
+    <p>
+        We implement reasonable security measures to protect your data, including encryption and access controls. However, no method of transmission over the Internet is 100% secure.
+    </p>
+
+    <h2>6. Data Retention</h2>
+    <p>
+        We retain your data as long as necessary to provide our services or as required by law. You may request deletion of your data by contacting us.
+    </p>
+
+    <h2>7. Your Rights</h2>
+    <ul>
+        <li>You may access, update, or request deletion of your personal information by contacting us at <a href="mailto:{{ EMAIL_FROM }}">{{ EMAIL_FROM }}</a>.</li>
+        <li>You may opt out of marketing emails at any time.</li>
+    </ul>
+
+    <h2>8. Children's Privacy</h2>
+    <p>
+        Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13.
+    </p>
+
+    <h2>9. Changes to This Policy</h2>
+    <p>
+        We may update this Privacy Policy from time to time. We will notify users of significant changes by posting the new policy on this page.
+    </p>
+
+    <h2>10. Contact Us</h2>
+    <p>
+        If you have any questions about this Privacy Policy, please contact us at <a href="mailto:{{ EMAIL_FROM }}">{{ EMAIL_FROM }}</a>.
+    </p>
 </div>
 {% endblock %}

@@ -24,6 +24,9 @@ import string
 import re
 from app.profanity_filter import PROFANITY_LIST
 from app.utils import generate_verification_token, send_verification_email, verify_verification_token
+from app.config import EMAIL_FROM
+import smtplib
+from email.mime.text import MIMEText
 
 auth_router = APIRouter()
 
@@ -72,9 +75,11 @@ async def login_post(
         user = results.first()
         if not user or not bcrypt.checkpw(password.encode("utf8"), user.hashed_password.encode("utf8")):
             raise HTTPException(status_code=400, detail="Invalid email or password.")
+        if user.marked_for_deletion:
+            raise HTTPException(status_code=403, detail="This account has been marked for deletion.")
         if not user.verified:
             raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
-        
+
         # Generate session token using JWT
         payload = {
             "user_id": user.id,
@@ -112,18 +117,12 @@ async def logout():
 
 @auth_router.post("/sign-up")
 async def register_user(
-    request: Request,  # Add request as a parameter
+    request: Request,
     first_name: str = Form(...),
-    last_name: str = Form(...), 
-    event_date: str = Form(...),
+    last_name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...)
 ):
-    if not is_valid_password(password):
-        raise HTTPException(
-            status_code=400,
-            detail="Password must be at least 6 characters long, contain at least one uppercase letter, one number, and one special character."
-        )
     with SessionLocal() as session:
         # Check for existing user by email
         statement = select(User).where(User.email == email)
@@ -131,13 +130,7 @@ async def register_user(
         existing_user = results.first()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already exists.")
-            
-        # Parse event_date string to date object
-        try:
-            parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid event date format. Use YYYY-MM-DD.")
-        
+
         # Hash the password
         hashed = bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt())
         user = User(
@@ -173,17 +166,19 @@ async def user_gallery(request: Request, event_id: int = None):
         if not user:
             return RedirectResponse(url="/auth/login", status_code=303)
         events = session.exec(select(Event).filter(Event.user_id == user_id)).all()
-        
-        # Determine which event to show
+
+        # auto‐select if there's only one event
         selected_event = None
         if event_id:
             selected_event = next((e for e in events if e.id == event_id), None)
-        
+        elif len(events) == 1:
+            selected_event = events[0]
+
         files = []
-        seen_files = set()
         if selected_event:
             event_folder = selected_event.storage_path
             full_event_path = os.path.join(STORAGE_ROOT, event_folder)
+            seen_files = set()  # ← Add this line
             if os.path.exists(full_event_path):
                 for guest_id in os.listdir(full_event_path):
                     guest_folder = os.path.join(full_event_path, guest_id)
@@ -237,9 +232,23 @@ async def event_details(request: Request, event_id: int):
         event_types = session.exec(select(EventType)).all()
         # If event does not exist, show the same form but with empty/default values
         if not event:
-            context = {"request": request, "user": user, "event": None, "event_types": event_types, "event_id": event_id}
+            context = {
+                "request": request,
+                "user": user,
+                "event": None,
+                "event_types": event_types,
+                "event_id": event_id,
+                "field_errors": {}
+            }
             return templates.TemplateResponse("event_details.html", context)
-    context = {"request": request, "user": user, "event": event, "event_types": event_types,  "event_id": event_id}
+    context = {
+        "request": request,
+        "user": user,
+        "event": event,
+        "event_types": event_types,
+        "event_id": event_id,
+        "field_errors": {}
+    }
     return templates.TemplateResponse("event_details.html", context)
 
 @auth_router.post("/event-details/{event_id}")
@@ -276,7 +285,8 @@ async def update_event_details(
                 "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
                 "event_types": event_types,
                 "error": "Event date is required and must be valid.",
-                "event_id": event_id
+                "event_id": event_id,
+                "field_errors": {}
             }
             return templates.TemplateResponse("event_details.html", context)
 
@@ -289,7 +299,8 @@ async def update_event_details(
                 "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
                 "event_types": event_types,
                 "error": "Event date cannot be in the past.",
-                "event_id": event_id
+                "event_id": event_id,
+                "field_errors": {}
             }
             return templates.TemplateResponse("event_details.html", context)
 
@@ -483,4 +494,33 @@ async def verify_email(token: str, request: Request):
         session.commit()
 
     return templates.TemplateResponse("thank_you_verification.html", {"request": request})
+
+@auth_router.get("/delete-account")
+async def delete_account_get(request: Request):
+    # ... get user logic ...
+    return templates.TemplateResponse("delete_account.html", {"request": request, "user": user})
+
+@auth_router.post("/delete-account")
+async def delete_account_post(request: Request, reason: str = Form(None)):
+    token = request.cookies.get("session_token")
+    if not token:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
+        user = session.exec(select(User).where(User.id == user_id)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        user.marked_for_deletion = True
+        session.add(user)
+        session.commit()
+
+    return templates.TemplateResponse(
+        "delete_account.html",
+        {"request": request, "user": user, "success": "Your account has been marked for deletion. You will no longer be able to log in."}
+    )
 

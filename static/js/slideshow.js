@@ -8,24 +8,24 @@ const nextBtn = document.getElementById("nextBtn");
 
 // Function to clear previous modal media content
 function clearModalContent() {
-    const oldContent = modal.querySelector(".modal-media");
-    if (oldContent) {
-        modal.removeChild(oldContent);
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.innerHTML = '';
     }
 }
 
 // --- Make openModal global ---
 window.openModal = function(index) {
-    // Re-query the gallery media every time the modal is opened
     const galleryMedia = Array.from(document.querySelectorAll(".gallery-item-media"));
     if (index < 0 || index >= galleryMedia.length) {
         console.error("Invalid index for openModal:", index);
         return;
     }
 
-    currentSlideshowIndex = index; // Use the global index variable
+    currentSlideshowIndex = index;
     modal.style.display = "flex";
     clearModalContent();
+    document.body.style.overflow = 'hidden';
 
     const sourceEl = galleryMedia[currentSlideshowIndex];
     let modalMedia;
@@ -34,14 +34,16 @@ window.openModal = function(index) {
         modalMedia = document.createElement("video");
         modalMedia.controls = true;
         modalMedia.src = sourceEl.src;
-        modalMedia.autoplay = true; // Optional: start playing video on open
+        modalMedia.autoplay = true;
     } else {
         modalMedia = document.createElement("img");
         modalMedia.src = sourceEl.src;
     }
     modalMedia.classList.add("modal-media");
-    // Insert the media element inside the modal before other elements (like nav buttons)
-    modal.insertBefore(modalMedia, modal.firstChild);
+    // FIX: Insert into .modal-content, not modal
+    const modalContent = modal.querySelector('.modal-content');
+    modalContent.innerHTML = ''; // Clear previous
+    modalContent.appendChild(modalMedia);
 }
 // --- End global openModal ---
 
@@ -51,6 +53,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Close modal when clicking on close icon
     closeModal.onclick = function() {
         modal.style.display = "none";
+        document.body.style.overflow = '';
         const currentMedia = modal.querySelector(".modal-media");
         if (currentMedia && currentMedia.tagName.toLowerCase() === "video") {
             currentMedia.pause(); // Stop video playback on close
@@ -79,6 +82,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // Check if the click target is the modal background itself, not content within it
         if (e.target === modal) {
             modal.style.display = "none";
+            document.body.style.overflow = '';
             const currentMedia = modal.querySelector(".modal-media");
              if (currentMedia && currentMedia.tagName.toLowerCase() === "video") {
                 currentMedia.pause(); // Stop video playback on close

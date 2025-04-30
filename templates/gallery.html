@@ -5,16 +5,31 @@
 <link rel="stylesheet" href="/static/css/slideshow.css">
 <div class="gallery-page">
     <div class="container">
-        {% if events|length > 1 %}
-            <!-- ... event selection form ... -->
-        {% endif %}
+        {% if events|length > 1 and not selected_event %}
+<form method="get" action="/auth/gallery">
+    <label for="event_id">Select an Event:</label>
+    <select name="event_id" id="event_id">
+        {% for event in events %}
+        <option value="{{ event.id }}">{{ event.name }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">View Gallery</button>
+</form>
+{% endif %}
         <h2>
             <!-- ... event name ... -->
         </h2>
         {% if files %}
         <a href="/auth/download-all">Download All Photos</a>
         <div id="gallery" class="gallery-container">
-            <!-- Photos will be dynamically loaded here -->
+            {% for file in files %}
+            <div class="gallery-item" data-size="{{ 'large' if loop.index is divisibleby(3) else 'small' }}">
+               <img src="{{ file.filepath }}"
+                    alt="{{ file.filename }}"
+                    loading="lazy"
+                    class="gallery-item-media">
+            </div>
+            {% endfor %}
         </div>
         <div id="loading" class="loading" style="display: none;">Loading more photos...</div>
         {% else %}
@@ -26,13 +41,11 @@
 
 <!-- Modal Structure -->
 <div id="modal" class="modal">
-    <!-- ... modal content ... -->
+    <button id="prevBtn">&lt;</button>
+    <div class="modal-content"></div>
+    <button id="nextBtn">&gt;</button>
+    <span id="modalClose">&times;</span>
 </div>
-
-<!-- ADD MASONRY LIBRARY -->
-<script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
-<!-- ADD IMAGESLOADED (Recommended by Masonry for reliability) -->
-<script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
 
 <script src="/static/js/gallery.js"></script>
 <script src="/static/js/slideshow.js"></script>

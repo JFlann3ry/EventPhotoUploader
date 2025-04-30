@@ -173,12 +173,12 @@ async def user_gallery(request: Request, event_id: int = None):
         if not user:
             return RedirectResponse(url="/auth/login", status_code=303)
         events = session.exec(select(Event).filter(Event.user_id == user_id)).all()
+        
         # Determine which event to show
         selected_event = None
         if event_id:
             selected_event = next((e for e in events if e.id == event_id), None)
-        else:
-            selected_event = events[0] if events else None
+        
         files = []
         seen_files = set()
         if selected_event:

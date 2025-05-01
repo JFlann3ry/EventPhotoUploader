@@ -1,12 +1,21 @@
-from fastapi import APIRouter, Request, Form, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, status, Request, Response, Form
+from sqlmodel import Session, select
+from app.models import User, Event, FileMetadata, EventType, QRCode  # Corrected import
+from app.db.session import SessionLocal, engine
+from app.utils.token import create_access_token, verify_password, generate_verification_token, verify_verification_token, validate_token
+from app.utils.email_utils import send_verification_email
+from app.core.config import SECRET_KEY, ALGORITHM, STORAGE_ROOT, BASE_URL, EMAIL_FROM
+from datetime import datetime, timedelta
+import jwt
 from fastapi.responses import RedirectResponse, FileResponse
 from app.template_env import templates
-from sqlmodel import select
-import bcrypt, time, jwt
-from datetime import datetime, date
-from app.models import User, Event, FileMetadata, EventType, QRCode
-from app.database import SessionLocal
-from fastapi import Form
+import bcrypt, time
+import random
+import string
+import re
+from app.profanity_filter import PROFANITY_LIST
+import smtplib
+from email.mime.text import MIMEText
 import qrcode
 from io import BytesIO
 from fastapi.responses import StreamingResponse
@@ -17,18 +26,12 @@ import io
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
-from app.config import STORAGE_ROOT  # Ensure STORAGE_ROOT is imported
-from app.config import BASE_URL  # Ensure BASE_URL is imported
-import random
-import string
-import re
-from app.profanity_filter import PROFANITY_LIST
-from app.utils import generate_verification_token, send_verification_email, verify_verification_token
-from app.config import EMAIL_FROM
-import smtplib
-from email.mime.text import MIMEText
 
 auth_router = APIRouter()
+
+@auth_router.get("/login")
+async def login():
+    return {"message": "Login endpoint"}
 
 # Secret configuration (in a production setting store these securely)
 SECRET_KEY = "your-secret-key"

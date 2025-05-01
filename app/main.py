@@ -5,15 +5,16 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from .routes.upload_routes import upload_router
-from .routes.auth_routes import auth_router
-from .routes.event_routes import router as event_router
-from .routes.page_routes import router as page_router
-from .database import init_db
+from app.api.v1.auth import auth_router
+from app.api.v1.event import event_router
+from app.api.v1.gallery import gallery_router
+from app.api.v1.page import page_router
+from app.api.v1.upload import upload_router
+
+from .db.session import init_db
 from app.dummy_data import insert_dummy_event_types
 from app.export_events import export_events_to_pdf
-from app.config import STORAGE_ROOT, FACEBOOK_URL, INSTAGRAM_URL, TIKTOK_URL, WEBSITE_NAME, WEBSITE_DESCRIPTION
-from .routes.gallery_routes import gallery_router
+from app.core.config import STORAGE_ROOT, FACEBOOK_URL, INSTAGRAM_URL, TIKTOK_URL, WEBSITE_NAME, WEBSITE_DESCRIPTION
 
 from app.template_env import templates  # ← your Jinja2Templates instance
 
@@ -36,7 +37,7 @@ async def lifespan(app: FastAPI):
 
     # ─── Create a test user if missing ───────────────────────────────────────────
     from sqlmodel import Session, select
-    from app.database import engine
+    from app.db.session import engine
     from app.models import User
     import bcrypt, os
 
@@ -64,7 +65,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.mount("/media", StaticFiles(directory=STORAGE_ROOT), name="media")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(event_router,   prefix="/api")
 app.include_router(gallery_router, prefix="/api")
@@ -74,7 +75,7 @@ app.include_router(page_router)
 
 @app.get("/")
 async def home(request: Request):
-    from app.routes.page_routes import get_logged_in_user
+    from app.api.v1.page import get_logged_in_user
     user = get_logged_in_user(request)
     return templates.TemplateResponse("home.html", {"request": request, "user": user})
 

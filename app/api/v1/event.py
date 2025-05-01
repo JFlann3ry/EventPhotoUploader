@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from uuid import uuid4
 from datetime import datetime
+from sqlmodel import Session, select
+from app.models import Event  # Corrected import
+from app.db.session import engine
 
 router = APIRouter()
 
@@ -57,3 +60,11 @@ async def delete_event(event_id: str):
         raise HTTPException(status_code=404, detail="Event not found")
     del events[event_id]
     return {"message": "Event deleted successfully"}
+
+event_router = APIRouter()
+
+@event_router.get("/events")
+async def get_events():
+    with Session(engine) as session:
+        events = session.exec(select(Event)).all()
+    return {"events": events}

@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 from app.models import Photo, Event
-from app.database import engine
+from app.db.session import engine
 
 with Session(engine) as session:
     event_id = 1  # Replace with the event_id you are testing

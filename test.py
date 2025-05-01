@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models import Event, FileMetadata
-from app.database import SessionLocal, create_db_and_tables
+from app.db.session import SessionLocal, create_db_and_tables
 
 # Create the database and tables if they don't exist
 create_db_and_tables()

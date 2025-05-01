@@ -3,8 +3,8 @@ from reportlab.pdfgen import canvas
 import os
 from sqlmodel import Session, select
 from app.models import Event
-from app.database import engine
-from app.config import STORAGE_ROOT
+from app.db.session import engine
+from app.core.config import STORAGE_ROOT
 
 EXPORT_FILENAME = "events_export.pdf"
 

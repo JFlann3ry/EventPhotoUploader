@@ -19,3 +19,4 @@ EMAIL_FROM = "testingeventsnap@gmail.com"
 EMAIL_PASSWORD = "auoa rdig arpx jjsj"
 
 SECRET_KEY = os.getenv("SECRET_KEY", "This_is-More-Secure_than_nothing-i-Gu3SS!")  # Replace "default-secret-key" with a secure value
+ALGORITHM = "HS256"

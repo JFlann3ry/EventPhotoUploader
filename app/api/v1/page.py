@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from app.models import User, Event
-from app.database import SessionLocal
-from sqlmodel import select
+from app.db.session import SessionLocal, engine
+from sqlmodel import select, Session
 import jwt
 import smtplib
 from email.mime.text import MIMEText
-from app.config import EMAIL_FROM, EMAIL_PASSWORD, WEBSITE_NAME
+from app.core.config import EMAIL_FROM, EMAIL_PASSWORD, WEBSITE_NAME
 from datetime import datetime
 
 router = APIRouter()
@@ -160,3 +160,10 @@ async def terms_and_conditions(request: Request):
             "EMAIL_FROM": EMAIL_FROM
         }
     )
+
+page_router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+@page_router.get("/")
+async def home(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})

@@ -1,5 +1,5 @@
 from sqlmodel import create_engine
-from app.models import Base, FileMetadata, Event
+from app.models import FileMetadata, Event
 
 # Set up the correct database URL
 DATABASE_URL = "sqlite:///./database.db"  # Ensure the path to your database is correct

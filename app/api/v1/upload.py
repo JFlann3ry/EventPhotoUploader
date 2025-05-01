@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Form
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
-from ..models import Event, FileMetadata, Guest
-from ..database import engine
-from ..utils import validate_token
+from app.models import Event, FileMetadata, Guest  # Corrected import
+from app.db.session import engine
+from app.utils.token import validate_token
 from pathlib import Path
 import aiofiles, os, subprocess, shutil, json
 from datetime import datetime
@@ -72,6 +72,10 @@ async def guest_upload_form(request: Request, event_code: str, event_password: s
     )
 
 @upload_router.post("/{event_code}/{event_password}")
+async def upload_file(event_code: str, event_password: str):
+    return {"message": f"File uploaded for event {event_code}"}
+
+@upload_router.post("/{event_code}/{event_password}")
 async def guest_upload(
     request: Request,
     event_code: str,
@@ -80,7 +84,7 @@ async def guest_upload(
     file_upload: list[UploadFile] = File(...),
     guest_device: str = Form(None)
 ):
-    from app.config import STORAGE_ROOT
+    from app.core.config import STORAGE_ROOT
 
     with Session(engine) as session:
         # validate event

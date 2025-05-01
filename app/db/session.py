@@ -1,5 +1,5 @@
 from sqlmodel import create_engine, Session
-from .models import Event, FileMetadata
+from app.models import Event, FileMetadata
 
 DATABASE_URL = "sqlite:///./database.db"
 engine = create_engine(DATABASE_URL, echo=True)

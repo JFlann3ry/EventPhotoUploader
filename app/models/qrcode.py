@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
+from sqlalchemy.orm import Mapped, relationship
 
 class QRCode(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -10,4 +11,4 @@ class QRCode(SQLModel, table=True):
     created_date: datetime = Field(default_factory=datetime.utcnow)
 
     event_id: Optional[int] = Field(default=None, foreign_key="event.id")
-    event: Optional["Event"] = Relationship(back_populates="qrcode")
+    event: Optional["Event"] = relationship(back_populates="qrcode")

@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional, List
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
+from sqlalchemy.orm import Mapped, relationship
 
 class Event(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -15,13 +16,13 @@ class Event(SQLModel, table=True):
     event_password: str = Field(max_length=4)
     pricing_id: int = Field(foreign_key="pricing.id")
 
-    # Relationships (no positional arg)
-    user: "User" = Relationship(back_populates="events")
-    guests: List["Guest"] = Relationship(back_populates="event")
-    billings: List["Billing"] = Relationship(back_populates="event")
-    event_storage: Optional["EventStorage"] = Relationship(back_populates="event")
-    file_metadata: List["FileMetadata"] = Relationship(back_populates="event")
-    guest_sessions: List["GuestSession"] = Relationship(back_populates="event")
-    qrcode: Optional[QRCode] = Relationship(back_populates="event")
-    event_type: Optional["EventType"] = Relationship(back_populates="events")
-    pricing: "Pricing" = Relationship(back_populates="events")
+    # relationships (no positional arg)
+    user: Mapped[User] = relationship(back_populates="events")
+    guests: List["Guest"] = relationship(back_populates="event")
+    billings: List["Billing"] = relationship(back_populates="event")
+    event_storage: Optional["EventStorage"] = relationship(back_populates="event")
+    file_metadata: List["FileMetadata"] = relationship(back_populates="event")
+    guest_sessions: List["GuestSession"] = relationship(back_populates="event")
+    qrcode: Optional[QRCode] = relationship(back_populates="event")
+    event_type: Optional["EventType"] = relationship(back_populates="events")
+    pricing: Mapped[Pricing] = relationship(back_populates="events")

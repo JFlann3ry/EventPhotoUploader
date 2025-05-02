@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field
+from sqlalchemy.orm import Mapped, relationship
 
 class EventStorage(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -9,5 +10,5 @@ class EventStorage(SQLModel, table=True):
     path: str
     created_date: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationship (no positional arg)
-    event: "Event" = Relationship(back_populates="event_storage")
+    # relationship (no positional arg)
+    event: Mapped[Event] = relationship(back_populates="event_storage")

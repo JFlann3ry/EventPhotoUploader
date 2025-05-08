@@ -8,9 +8,9 @@ from pathlib import Path
 import aiofiles, os, subprocess, shutil, json
 from datetime import datetime
 from PIL import Image, ExifTags
+from app.template_env import templates
 
 upload_router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 def extract_photo_time(path: str) -> datetime | None:
@@ -70,10 +70,6 @@ async def guest_upload_form(request: Request, event_code: str, event_password: s
         "upload_form.html",
         {"request": request, "event": event}
     )
-
-@upload_router.post("/{event_code}/{event_password}")
-async def upload_file(event_code: str, event_password: str):
-    return {"message": f"File uploaded for event {event_code}"}
 
 @upload_router.post("/{event_code}/{event_password}")
 async def guest_upload(

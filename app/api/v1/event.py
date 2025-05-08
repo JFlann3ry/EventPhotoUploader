@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from uuid import uuid4
 from datetime import datetime
@@ -7,6 +8,7 @@ from app.models import Event  # Corrected import
 from app.db.session import engine
 
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
 # In-memory storage for demonstration purposes
 events = {}
@@ -43,7 +45,7 @@ async def get_event(event_id: str):
     return events[event_id]
 
 @router.put("/events/{event_id}")
-async def update_event(event_id: str, event_update: EventUpdate):
+async def update_event(event_id: str, event_update: EventUpdate, request: Request):
     if event_id not in events:
         raise HTTPException(status_code=404, detail="Event not found")
     event = events[event_id]
@@ -52,7 +54,17 @@ async def update_event(event_id: str, event_update: EventUpdate):
     if event_update.description:
         event["description"] = event_update.description
     event["updated_at"] = datetime.utcnow()
-    return event
+    event_types = ["Conference", "Workshop", "Webinar"]  # Example event types
+    return templates.TemplateResponse(
+        "event_details.html",
+        {
+            "request": request,
+            "event": event,
+            "event_types": event_types,
+            "success": "Event details updated successfully!",
+            "field_errors": {}  # <-- This is correct
+        }
+    )
 
 @router.delete("/events/{event_id}")
 async def delete_event(event_id: str):

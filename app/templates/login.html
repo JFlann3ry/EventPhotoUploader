@@ -4,7 +4,7 @@
 <div class="container" style="max-width: 400px; margin: 40px auto;">
     <h1>Login</h1>
     {% if error %}
-      <div class="error-message" role="alert" aria-live="polite">{{ error }}</div>
+      <div class="error-message" role="alert" aria-live="polite">{{ error | safe }}</div>
     {% endif %}
     <form method="post" action="/auth/login" id="loginForm">
         <label for="email">Email:</label>

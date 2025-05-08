@@ -1,7 +1,9 @@
-from fastapi.templating import Jinja2Templates
+from starlette.templating import Jinja2Templates
 from datetime import datetime
+from pathlib import Path
 
-templates = Jinja2Templates(directory="templates")
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory="app/templates")
 
 def ordinal(n):
     n = int(n)

@@ -5,9 +5,9 @@ from app.db.session import SessionLocal, engine
 from app.utils.token import create_access_token, verify_password, generate_verification_token, verify_verification_token, validate_token
 from app.utils.email_utils import send_verification_email
 from app.core.config import SECRET_KEY, ALGORITHM, STORAGE_ROOT, BASE_URL, EMAIL_FROM
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import jwt
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, StreamingResponse
 from app.template_env import templates
 import bcrypt, time
 import random
@@ -18,7 +18,6 @@ import smtplib
 from email.mime.text import MIMEText
 import qrcode
 from io import BytesIO
-from fastapi.responses import StreamingResponse
 import os
 from app.export_events import export_events_to_pdf
 import zipfile
@@ -26,12 +25,31 @@ import io
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
+from app.api.v1.page import get_logged_in_user  # <-- Add this import
+from app.models.models import UserSession
 
 auth_router = APIRouter()
 
+def get_logged_in_user(request: Request):
+    token = request.cookies.get("session_token")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except Exception:
+        return None
+    with SessionLocal() as session:
+        user_session = session.exec(select(UserSession).where(UserSession.session_token == token)).first()
+        if not user_session or user_session.expires_at < datetime.utcnow():
+            return None
+        user = session.exec(select(User).where(User.id == user_id)).first()
+    return user
+
 @auth_router.get("/login")
-async def login():
-    return {"message": "Login endpoint"}
+async def login_get(request: Request):
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("login.html", {"request": request, "user": user})
 
 # Secret configuration (in a production setting store these securely)
 SECRET_KEY = "your-secret-key"
@@ -62,10 +80,6 @@ def generate_unique_code(session, length=4):
         if not existing_event:
             return code
 
-@auth_router.get("/login")
-async def login_get(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
 @auth_router.post("/login")
 async def login_post(
     request: Request, 
@@ -77,43 +91,74 @@ async def login_post(
         results = session.exec(statement)
         user = results.first()
         if not user or not bcrypt.checkpw(password.encode("utf8"), user.hashed_password.encode("utf8")):
-            raise HTTPException(status_code=400, detail="Invalid email or password.")
+            # Show a generic error
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "user": None, "error": "Invalid email or password."}
+            )
         if user.marked_for_deletion:
-            raise HTTPException(status_code=403, detail="This account has been marked for deletion.")
+            # Show a specific error with a contact link
+            return templates.TemplateResponse(
+                "login.html",
+                {
+                    "request": request,
+                    "user": None,
+                    "error": (
+                        "This account has been marked for deletion. "
+                        "If this is a mistake, please <a href='/contact-us'>contact us</a>."
+                    )
+                }
+            )
         if not user.verified:
-            raise HTTPException(status_code=403, detail="Please verify your email before logging in.")
-
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "user": None, "error": "Please verify your email before logging in."}
+            )
         # Generate session token using JWT
         payload = {
             "user_id": user.id,
             "exp": time.time() + TOKEN_EXPIRE_SECONDS
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        
+        # Log session in DB
+        user_agent = request.headers.get("user-agent", "")
+        ip_address = request.client.host if request.client else ""
+        expires_at = datetime.utcnow() + timedelta(seconds=TOKEN_EXPIRE_SECONDS)
+        user_session = UserSession(
+            user_id=user.id,
+            session_token=token,
+            created_at=datetime.utcnow(),
+            expires_at=expires_at,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        session.add(user_session)
+        session.commit()
+        
         response = RedirectResponse(url="/auth/profile", status_code=303)
-        response.set_cookie("session_token", token)
+        response.set_cookie("session_token", token, httponly=True, samesite="lax", max_age=TOKEN_EXPIRE_SECONDS, path="/")
         return response
 
 @auth_router.get("/profile")
 async def profile(request: Request):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    with SessionLocal() as session:
-        statement = select(User).where(User.id == user_id)
-        results = session.exec(statement)
-        user = results.first()
+    user = get_logged_in_user(request)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=303)
     context = {"request": request, "user": user}
     return templates.TemplateResponse("profile.html", context)
 
 @auth_router.get("/logout")
-async def logout():
+async def logout(request: Request):
+    token = request.cookies.get("session_token")
+    with SessionLocal() as session:
+        if token:
+            user_sessions = session.exec(
+                select(UserSession).where(UserSession.session_token == token)
+            ).all()
+            for user_session in user_sessions:
+                session.delete(user_session)
+            session.commit()
     response = RedirectResponse(url="/auth/login", status_code=303)
     response.delete_cookie("session_token")
     return response
@@ -150,12 +195,14 @@ async def register_user(
         # Generate verification token and send email
         token = generate_verification_token(email)
         send_verification_email(email, token)
-
-    # Render the account_created.html template
-    return templates.TemplateResponse("account_created.html", {"request": request})
+    user = get_logged_in_user(request)
+    return templates.TemplateResponse("account_created.html", {"request": request, "user": user})
 
 @auth_router.get("/gallery")
 async def user_gallery(request: Request, event_id: int = None):
+    user = get_logged_in_user(request)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
     token = request.cookies.get("session_token")
     if not token:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -220,39 +267,20 @@ async def download_file(file_id: int):
 
 @auth_router.get("/event-details/{event_id}")
 async def event_details(request: Request, event_id: int):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
-        return RedirectResponse(url="/auth/login", status_code=303)
+    user = get_logged_in_user(request)
     with SessionLocal() as session:
-        # Use select() to create a SQL expression
-        user = session.exec(select(User).filter(User.id == user_id)).first()
-        event = session.exec(select(Event).filter(Event.id == event_id, Event.user_id == user_id)).first()
+        event = session.exec(select(Event).where(Event.id == event_id)).first()
         event_types = session.exec(select(EventType)).all()
-        # If event does not exist, show the same form but with empty/default values
-        if not event:
-            context = {
-                "request": request,
-                "user": user,
-                "event": None,
-                "event_types": event_types,
-                "event_id": event_id,
-                "field_errors": {}
-            }
-            return templates.TemplateResponse("event_details.html", context)
-    context = {
-        "request": request,
-        "user": user,
-        "event": event,
-        "event_types": event_types,
-        "event_id": event_id,
-        "field_errors": {}
-    }
-    return templates.TemplateResponse("event_details.html", context)
+    return templates.TemplateResponse(
+        "event_details.html",
+        {
+            "request": request,
+            "event": event,
+            "event_types": event_types,
+            "field_errors": {},
+            "user": user
+        }
+    )
 
 @auth_router.post("/event-details/{event_id}")
 async def update_event_details(
@@ -261,98 +289,48 @@ async def update_event_details(
     name: str = Form(...),
     event_date: str = Form(...),
     event_type_id: int = Form(...),
-    welcome_message: str = Form(...),
+    welcome_message: str = Form(...)
 ):
+    user = get_logged_in_user(request)
     with SessionLocal() as session:
-        user_id = 4  # Replace with your actual user ID retrieval logic
-        event_folder = os.path.join(STORAGE_ROOT, str(user_id))
-        folder_created = False
-        if not os.path.exists(event_folder):
-            os.makedirs(event_folder, exist_ok=True)
-            folder_created = True
-        # Parse event_date
-        print("DEBUG: Received event_date:", event_date)
-        parsed_date = None
-        if event_date:
-            try:
-                parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
-            except ValueError:
-                print("DEBUG: Failed to parse event_date")
-                parsed_date = None
-        if not parsed_date:
-            # Re-render the form with an error message
-            event_types = session.query(EventType).all()
-            context = {
-                "request": request,
-                "user": session.query(User).filter(User.id == user_id).first(),
-                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
-                "event_types": event_types,
-                "error": "Event date is required and must be valid.",
-                "event_id": event_id,
-                "field_errors": {}
-            }
-            return templates.TemplateResponse("event_details.html", context)
-
-        # Check if the parsed date is in the past
-        if parsed_date < date.today():
-            event_types = session.query(EventType).all()
-            context = {
-                "request": request,
-                "user": session.query(User).filter(User.id == user_id).first(),
-                "event": session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first(),
-                "event_types": event_types,
-                "error": "Event date cannot be in the past.",
-                "event_id": event_id,
-                "field_errors": {}
-            }
-            return templates.TemplateResponse("event_details.html", context)
-
-        event = session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first()
-        if event:
-            event.name = name
-            event.date = parsed_date
-            event.event_type_id = event_type_id
-            event.welcome_message = welcome_message
-            # Do not overwrite storage_path unless you are intentionally moving files.
-            # If you must, use:
-            event.storage_path = str(event.id)
-        else:
-            event = Event(
-                user_id=user_id,
-                name=name,
-                date=parsed_date,
-                event_type_id=event_type_id,
-                welcome_message=welcome_message,
-                storage_path="",  # <-- TEMPORARY, will update after commit
-                event_code=0,
-                event_password="",
-                pricing_id=1
-            )
-            session.add(event)
-            session.commit()
-            session.refresh(event)
-            event.storage_path = str(event.id)
-            session.add(event)
-            session.commit()
-
-    return RedirectResponse(url="/auth/events", status_code=303)
+        event = session.exec(select(Event).where(Event.id == event_id)).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        event.name = name
+        event.date = datetime.strptime(event_date, "%Y-%m-%d")
+        event.event_type_id = event_type_id
+        event.welcome_message = welcome_message
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+    event_types = session.exec(select(EventType)).all()
+    return templates.TemplateResponse(
+        "event_details.html",
+        {
+            "request": request,
+            "event": event,
+            "event_types": event_types,
+            "success": "Event details updated successfully!",
+            "field_errors": {},
+            "user": user
+        }
+    )
 
 @auth_router.get("/events")
 async def list_events(request: Request):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
+    user = get_logged_in_user(request)
+    if not user:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        events = session.exec(select(Event).where(Event.user_id == user_id)).all()
-    return templates.TemplateResponse("event_list.html", {"request": request, "events": events})
+        events = session.exec(select(Event).where(Event.user_id == user.id)).all()
+    return templates.TemplateResponse(
+        "events.html",
+        {"request": request, "events": events, "user": user}
+    )
 
 @auth_router.get("/create-event")
 async def create_event_get(request: Request):
+    user = get_logged_in_user(request)
     token = request.cookies.get("session_token")
     if not token:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -363,7 +341,7 @@ async def create_event_get(request: Request):
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
         event_types = session.exec(select(EventType)).all()
-    return templates.TemplateResponse("create_event.html", {"request": request, "event_types": event_types})
+    return templates.TemplateResponse("create_event.html", {"request": request, "event_types": event_types, "user": user})
 
 @auth_router.post("/create-event")
 async def create_event_post(
@@ -373,6 +351,7 @@ async def create_event_post(
     event_type_id: int = Form(...),
     welcome_message: str = Form(...)
 ):
+    user = get_logged_in_user(request)
     token = request.cookies.get("session_token")
     if not token:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -383,7 +362,6 @@ async def create_event_post(
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
         try:
-            # Parse the event date
             parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
         except ValueError:
             event_types = session.exec(select(EventType)).all()
@@ -392,22 +370,19 @@ async def create_event_post(
                 {
                     "request": request,
                     "event_types": event_types,
-                    "error": "Invalid event date format. Use YYYY-MM-DD."
+                    "error": "Invalid event date format. Use YYYY-MM-DD.",
+                    "user": user
                 }
             )
-        
-        # Generate unique event code and password
         event_code = generate_unique_code(session)
         event_password = generate_unique_code(session)
-
-        # Create the event
         event = Event(
             user_id=user_id,
             name=name,
             date=parsed_date,
             event_type_id=event_type_id,
             welcome_message=welcome_message,
-            storage_path="",  # Will update after commit
+            storage_path="",
             event_code=event_code,
             event_password=event_password,
             pricing_id=1
@@ -415,55 +390,12 @@ async def create_event_post(
         session.add(event)
         session.commit()
         session.refresh(event)
-
-        # Update the storage path and create the folder
         event.storage_path = str(event.id)
         session.add(event)
         session.commit()
-
-        # Create the storage folder
         event_folder_path = Path(STORAGE_ROOT) / event.storage_path
         event_folder_path.mkdir(parents=True, exist_ok=True)
-
     return RedirectResponse(url=f"/auth/event-details/{event.id}", status_code=303)
-
-@auth_router.get("/event-qr")
-async def generate_qr_code(event_id: int):
-    with SessionLocal() as session:
-        event = session.query(Event).filter(Event.id == event_id).first()
-        if not event:
-            raise HTTPException(status_code=404, detail="Event not found")
-        
-        # Use event code and password in the QR code URL
-        qr_url = f"{BASE_URL}/upload/{event.event_code}/{event.event_password}"
-
-        # Generate the QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(qr_url)
-        qr.make(fit=True)
-
-        # Save QR code to an in-memory buffer
-        img = qr.make_image(fill_color="black", back_color="white")
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-
-        # Store QR code in the database
-        qr_code = session.query(QRCode).filter(QRCode.event_id == event_id).first()
-        if not qr_code:
-            qr_code = QRCode(event_id=event_id, qr_url=qr_url, scanned_count=0)
-            session.add(qr_code)
-            session.commit()
-        else:
-            qr_code.qr_url = qr_url  # Update URL if necessary
-            session.commit()
-
-        return StreamingResponse(buffer, media_type="image/png")
 
 @auth_router.get("/scan-qr/{event_id}")
 async def scan_qr_code(event_id: int):
@@ -500,30 +432,42 @@ async def verify_email(token: str, request: Request):
 
 @auth_router.get("/delete-account")
 async def delete_account_get(request: Request):
-    # ... get user logic ...
+    user = get_logged_in_user(request)  # <-- Add this line
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
     return templates.TemplateResponse("delete_account.html", {"request": request, "user": user})
 
 @auth_router.post("/delete-account")
 async def delete_account_post(request: Request, reason: str = Form(None)):
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
+    user = get_logged_in_user(request)
+    if not user:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
-        user = session.exec(select(User).where(User.id == user_id)).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found.")
-
-        user.marked_for_deletion = True
-        session.add(user)
+        # Delete all user sessions
+        sessions = session.exec(
+            select(UserSession).where(UserSession.user_id == user.id)
+        ).all()
+        for s in sessions:
+            session.delete(s)
+        # Optionally, log the reason somewhere (not shown)
+        # Delete the user
+        session.delete(user)
         session.commit()
+    response = RedirectResponse(url="/auth/login", status_code=303)
+    response.delete_cookie("session_token")
+    return response
 
-    return templates.TemplateResponse(
-        "delete_account.html",
-        {"request": request, "user": user, "success": "Your account has been marked for deletion. You will no longer be able to log in."}
-    )
+@auth_router.get("/event-qr")
+async def event_qr(event_id: int):
+    with SessionLocal() as session:
+        event = session.exec(select(Event).where(Event.id == event_id)).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        # Generate the QR code data (URL for upload)
+        qr_data = f"/upload/{event.event_code}/{event.event_password}"
+        img = qrcode.make(qr_data)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="image/png")
 

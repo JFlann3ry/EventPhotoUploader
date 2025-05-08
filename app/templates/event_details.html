@@ -2,6 +2,12 @@
 {% block title %}Event Details{% endblock %}
 {% block content %}
 <div class="container event-details-container">
+    {% if user %}
+      <div class="user-info">
+        Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+        <a href="/auth/logout">Logout</a>
+      </div>
+    {% endif %}
     <h1>Event Details</h1>
     {% if event %}
         <form method="post" action="/auth/event-details/{{ event.id }}" id="eventDetailsForm">
@@ -23,7 +29,7 @@
                     <div><strong>Type:</strong>
                         {% for et in event_types %}
                             {% if event.event_type_id == et.id %}
-                                {{ et.event_type_name }}
+                                {{ et.name }}
                             {% endif %}
                         {% endfor %}
                     </div>
@@ -36,7 +42,7 @@
                     <div><strong>Event Code:</strong> {{ event.event_code }}</div>
                     <div>
                         <strong>Event Password:</strong>
-                        <span id="eventPassword" style="letter-spacing:2px;">{{ event.event_password }}</span>
+                        <span id="eventPassword">{{ event.event_password }}</span>
                     </div>
                 </section>
                 <section class="event-section" style="text-align:center;">
@@ -61,13 +67,19 @@
                 {% endif %}
                 <br><br>
                 <label for="event_date">Event Date:</label>
-                <input type="date" id="event_date" name="event_date" required
-                       value="{{ event.date.strftime('%Y-%m-%d') }}">
+                <input
+                    type="text"
+                    id="event_date"
+                    autocomplete="off"
+                    placeholder="Select event date"
+                    value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}"
+                >
+                <input type="hidden" name="event_date" id="event_date_hidden" value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}">
                 <br><br>
                 <label for="event_type_id">Event Type:</label>
                 <select name="event_type_id" id="event_type_id" required>
                     {% for et in event_types %}
-                        <option value="{{ et.id }}" {% if event.event_type_id == et.id %}selected{% endif %}>{{ et.event_type_name }}</option>
+                        <option value="{{ et.id }}">{{ et.name }}</option>
                     {% endfor %}
                 </select>
                 <br><br>
@@ -78,9 +90,13 @@
                 <button type="button" id="cancelBtn" onclick="hideEditMode()" class="secondary-btn" aria-label="Cancel editing">Cancel</button>
             </div>
         </form>
+
     {% else %}
         <p>No event details found.</p>
     {% endif %}
 </div>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+<script src="/static/js/event_date_picker.js"></script>
 <script src="/static/js/event_details.js"></script>
 {% endblock %}

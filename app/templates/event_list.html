@@ -3,6 +3,9 @@
 {% block content %}
 <div class="container">
     <h1>Your Events</h1>
+    {% if user %}
+        <div>Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})</div>
+    {% endif %}
     {% if events %}
         <ul>
             {% for event in events %}

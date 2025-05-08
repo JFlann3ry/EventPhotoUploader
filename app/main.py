@@ -16,7 +16,7 @@ from app.dummy_data import insert_dummy_event_types
 from app.export_events import export_events_to_pdf
 from app.core.config import STORAGE_ROOT, FACEBOOK_URL, INSTAGRAM_URL, TIKTOK_URL, WEBSITE_NAME, WEBSITE_DESCRIPTION
 
-from app.template_env import templates  # ← your Jinja2Templates instance
+from app.template_env import templates
 
 # ─── Register your site globals here ───────────────────────────────────────────
 templates.env.globals.update({
@@ -35,10 +35,10 @@ async def lifespan(app: FastAPI):
     insert_dummy_event_types()
     export_events_to_pdf()
 
-    # ─── Create a test user if missing ───────────────────────────────────────────
+    # Import models here to avoid circular imports
+    from app.models import User
     from sqlmodel import Session, select
     from app.db.session import engine
-    from app.models import User
     import bcrypt, os
 
     TEST_EMAIL    = os.getenv("TEST_USER_EMAIL", "test1@test.com")
@@ -59,7 +59,6 @@ async def lifespan(app: FastAPI):
             )
             session.add(test_user)
             session.commit()
-    # ───────────────────────────────────────────────────────────────────────────────
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -78,5 +77,3 @@ async def home(request: Request):
     from app.api.v1.page import get_logged_in_user
     user = get_logged_in_user(request)
     return templates.TemplateResponse("home.html", {"request": request, "user": user})
-
-# you can now remove the add_global_context middleware if you want

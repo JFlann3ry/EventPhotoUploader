@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form, HTTPException
-from fastapi.templating import Jinja2Templates
+from app.template_env import templates
 from fastapi.responses import RedirectResponse
 from app.models import User, Event
 from app.db.session import SessionLocal, engine
@@ -7,14 +7,11 @@ from sqlmodel import select, Session
 import jwt
 import smtplib
 from email.mime.text import MIMEText
-from app.core.config import EMAIL_FROM, EMAIL_PASSWORD, WEBSITE_NAME
+from app.core.config import EMAIL_FROM, EMAIL_PASSWORD, WEBSITE_NAME, SECRET_KEY, ALGORITHM
 from datetime import datetime
 
-router = APIRouter()
-templates = Jinja2Templates(directory="templates")
-
-SECRET_KEY = "your-secret-key"
-ALGORITHM = "HS256"
+page_router = APIRouter()
+auth_router = APIRouter()
 
 def get_logged_in_user(request: Request):
     token = request.cookies.get("session_token")
@@ -23,13 +20,13 @@ def get_logged_in_user(request: Request):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("user_id")
-        with SessionLocal() as session:
-            user = session.query(User).filter(User.id == user_id).first()
-            return user
     except Exception:
         return None
+    with SessionLocal() as session:
+        user = session.exec(select(User).where(User.id == user_id)).first()
+    return user
 
-@router.get("/how-it-works")
+@page_router.get("/how-it-works")
 async def how_it_works(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse(
@@ -42,17 +39,17 @@ async def how_it_works(request: Request):
         }
     )
 
-@router.get("/pricing")
+@page_router.get("/pricing")
 async def pricing(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("pricing.html", {"request": request, "user": user})
 
-@router.get("/guest-login")
+@page_router.get("/guest-login")
 async def guest_login(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("guest_login.html", {"request": request, "user": user})
 
-@router.post("/guest-login")
+@page_router.post("/guest-login")
 async def guest_login_post(
     request: Request,
     guest_code: str = Form(...),
@@ -74,27 +71,27 @@ async def guest_login_post(
                 {"request": request, "user": user, "error": "Invalid event code or password."}
             )
 
-@router.get("/sign-up")
+@page_router.get("/sign-up")
 async def sign_up(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("sign_up.html", {"request": request, "user": user})
 
-@router.get("/about")
+@page_router.get("/about")
 async def about(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("about.html", {"request": request, "user": user})
 
-@router.get("/help-center")
+@page_router.get("/help-center")
 async def help_center(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("help_center.html", {"request": request, "user": user})
 
-@router.get("/contact-us")
+@page_router.get("/contact-us")
 async def contact_us_get(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse("contact_us.html", {"request": request, "user": user})
 
-@router.post("/contact-us")
+@page_router.post("/contact-us")
 async def contact_us_post(
     request: Request,
     full_name: str = Form(...),
@@ -147,7 +144,7 @@ Event Snap Team
         {"request": request, "user": user, "success": "Thank you for contacting us! We have received your message."}
     )
 
-@router.get("/terms-and-conditions")
+@page_router.get("/terms-and-conditions")
 async def terms_and_conditions(request: Request):
     user = get_logged_in_user(request)
     return templates.TemplateResponse(
@@ -161,9 +158,10 @@ async def terms_and_conditions(request: Request):
         }
     )
 
-page_router = APIRouter()
-templates = Jinja2Templates(directory="templates")
-
-@page_router.get("/")
-async def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+@auth_router.get("/profile")
+async def profile(request: Request):
+    user = get_logged_in_user(request)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    context = {"request": request, "user": user}
+    return templates.TemplateResponse("profile.html", context)

@@ -2,6 +2,12 @@
 {% block title %}Your Events{% endblock %}
 {% block content %}
 <div class="container">
+    {% if user %}
+      <div class="user-info">
+        Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+        <a href="/auth/logout">Logout</a>
+      </div>
+    {% endif %}
     <h1>Your Events</h1>
     {% if events %}
         <ul>

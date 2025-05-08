@@ -2,6 +2,12 @@
 {% block title %}Create Event{% endblock %}
 {% block content %}
 <div class="container">
+    {% if user %}
+      <div class="user-info">
+        Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+        <a href="/auth/logout">Logout</a>
+      </div>
+    {% endif %}
     <h1>Create New Event</h1>
     <form method="post" action="/auth/create-event" id="createEventForm">
         <label for="name">Event Name:</label>
@@ -19,7 +25,7 @@
         <label for="event_type_id">Event Type:</label>
         <select name="event_type_id" id="event_type_id" required>
             {% for et in event_types %}
-                <option value="{{ et.id }}">{{ et.event_type_name }}</option>
+                <option value="{{ et.id }}">{{ et.name }}</option>
             {% endfor %}
         </select>
 

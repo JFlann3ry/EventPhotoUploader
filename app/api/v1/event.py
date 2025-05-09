@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from uuid import uuid4
 from datetime import datetime
 from sqlmodel import Session, select
-from app.models import Event  # Corrected import
-from app.db.session import engine
+from app.models import Event, User, Pricing  # Corrected import
+from app.db.session import engine, get_session
+from app.api.v1.auth import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -24,19 +25,39 @@ class EventUpdate(BaseModel):
     name: str = None
     description: str = None
 
+def check_event_limit(user: User, session: Session):
+    pricing = session.exec(select(Pricing).where(Pricing.id == user.pricing_id)).first()
+    if not pricing:
+        raise HTTPException(status_code=400, detail="Pricing tier not found")
+
+    event_count = session.exec(select(Event).where(Event.user_id == user.id)).count()
+    if event_count >= pricing.event_limit:
+        raise HTTPException(status_code=403, detail="Event limit reached")
+
 @router.post("/events")
-async def create_event(event: EventCreate):
-    event_id = str(uuid4())
-    events[event_id] = {
-        "id": event_id,
-        "name": event.name,
-        "description": event.description,
-        "event_code": event.event_code,
-        "password": event.password,  # In production, hash this password
-        "created_at": datetime.utcnow(),
-        "updated_at": None,
-    }
-    return events[event_id]
+async def create_event(
+    name: str = Form(...),
+    description: str = Form(None),
+    event_code: str = Form(...),
+    password: str = Form(...),
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    check_event_limit(user, session)
+
+    new_event = Event(
+        user_id=user.id,
+        name=name,
+        description=description,
+        date=datetime.utcnow(),
+        storage_path="path/to/storage",  # Replace with actual storage logic
+        event_code=event_code,
+        event_password=password,
+    )
+    session.add(new_event)
+    session.commit()
+    session.refresh(new_event)
+    return {"message": "Event created successfully", "event": new_event}
 
 @router.get("/events/{event_id}")
 async def get_event(event_id: str):
@@ -72,6 +93,16 @@ async def delete_event(event_id: str):
         raise HTTPException(status_code=404, detail="Event not found")
     del events[event_id]
     return {"message": "Event deleted successfully"}
+
+@router.get("/events")
+async def events_page(request: Request, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    # Fetch the user's events
+    user_events = session.exec(select(Event).where(Event.user_id == user.id)).all()
+    return templates.TemplateResponse("events.html", {"request": request, "events": user_events, "user": user})
+
+@router.get("/events/create")
+async def create_event_page(request: Request, user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("create_event.html", {"request": request, "user": user})
 
 event_router = APIRouter()
 

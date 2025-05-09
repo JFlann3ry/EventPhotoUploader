@@ -1,15 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Your Profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block content %}
-<div class="container" style="max-width: 500px; margin: 40px auto;">
+<div class="container">
     <div class="profile-card">
-        <img src="/static/images/profile-placeholder.png" alt="Profile">
         <h2>{{ user.first_name }} {{ user.last_name }}</h2>
         <p>{{ user.email }}</p>
         <hr>
         <div class="profile-actions">
             <a href="/auth/gallery" class="primary-btn">View & Download Event Photos</a>
-            <a href="/auth/events" class="secondary-btn">View Your Events</a>
+            <a href="/auth/events/create" class="primary-btn">Create New Event</a>
         </div>
         <a href="/auth/logout" class="logout">Logout</a>
         <hr>

@@ -1,43 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Create Event{% endblock %}
+{% block title %}Create New Event{% endblock %}
 {% block content %}
 <div class="container">
-    {% if user %}
-      <div class="user-info">
-        Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
-        <a href="/auth/logout">Logout</a>
-      </div>
-    {% endif %}
     <h1>Create New Event</h1>
-    <form method="post" action="/auth/create-event" id="createEventForm">
-        <label for="name">Event Name:</label>
-        <input type="text" id="name" name="name" placeholder="Enter event name" required>
-
-        <label for="event_date">Event Date:</label>
-        <input
-            type="text"
-            id="event_date"
-            autocomplete="off"
-            placeholder="Select event date"
-        >
-        <input type="hidden" name="event_date" id="event_date_hidden">
-
-        <label for="event_type_id">Event Type:</label>
-        <select name="event_type_id" id="event_type_id" required>
-            {% for et in event_types %}
-                <option value="{{ et.id }}">{{ et.name }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="welcome_message">Welcome Message:</label>
-        <textarea name="welcome_message" id="welcome_message" placeholder="Enter a welcome message"></textarea>
-
+    <form action="/auth/events" method="post">
+        <div>
+            <label for="name">Event Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <textarea id="description" name="description"></textarea>
+        </div>
+        <div>
+            <label for="event_code">Event Code:</label>
+            <input type="text" id="event_code" name="event_code" maxlength="4" required>
+        </div>
+        <div>
+            <label for="password">Event Password:</label>
+            <input type="password" id="password" name="password" maxlength="4" required>
+        </div>
         <button type="submit">Create Event</button>
     </form>
-    <a href="/auth/events">Back to Event List</a>
+    <a href="/auth/profile">Back to Profile</a>
 </div>
-
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
-<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
-<script src="/static/js/event_date_picker.js"></script>
 {% endblock %}

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request, Response
 from sqlmodel import Session, select
 from typing import Optional  # Ensure this is included
 from app.models import User, Event, FileMetadata, EventType, QRCode
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal, engine, get_session
 from app.utils.token import create_access_token, verify_password, generate_verification_token, verify_verification_token, validate_token
 from app.utils.email_utils import send_verification_email
 from app.core.config import SECRET_KEY, ALGORITHM, STORAGE_ROOT, BASE_URL, EMAIL_FROM
@@ -45,6 +45,25 @@ def get_logged_in_user(request: Request):
         if not user_session or user_session.expires_at < datetime.utcnow():
             return None
         user = session.exec(select(User).where(User.id == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return user
+
+def get_current_user(session: Session = Depends(get_session)):
+    # Example: Replace with actual authentication logic
+    token = request.cookies.get("session_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Session expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = session.exec(select(User).where(User.id == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     return user
 
 @auth_router.get("/login")

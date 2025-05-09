@@ -4,12 +4,18 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env
+load_dotenv()
 
 from app.api.v1.auth import auth_router
 from app.api.v1.event import event_router
 from app.api.v1.gallery import gallery_router
 from app.api.v1.page import page_router
 from app.api.v1.upload import upload_router
+from app.api.v1.event import router as event_router
 
 from .db.session import init_db
 from app.dummy_data import insert_dummy_event_types
@@ -29,36 +35,111 @@ templates.env.globals.update({
 })
 # ────────────────────────────────────────────────────────────────────────────────
 
+def insert_pricing_tiers():
+    from app.models import Pricing
+    from sqlmodel import Session, select
+    from app.db.session import engine
+
+    pricing_tiers = [
+        {
+            "tier": "Free",
+            "price": 0.0,
+            "event_limit": 1,
+            "storage_limit_mb": 30,
+            "can_download": False,
+            "storage_duration": 30,
+            "allow_video": False,
+        },
+        {
+            "tier": "Basic",
+            "price": 10.0,
+            "event_limit": 1,
+            "storage_limit_mb": -1,  # Use -1 for unlimited storage
+            "can_download": True,
+            "storage_duration": 180,
+            "allow_video": False,
+        },
+        {
+            "tier": "Pro",
+            "price": 30.0,
+            "event_limit": 5,
+            "storage_limit_mb": -1,  # Use -1 for unlimited storage
+            "can_download": True,
+            "storage_duration": 365,
+            "allow_video": False,
+        },
+        {
+            "tier": "Premium",
+            "price": 60.0,
+            "event_limit": 5,
+            "storage_limit_mb": -1,  # Use -1 for unlimited storage
+            "can_download": True,
+            "storage_duration": 365,
+            "allow_video": True,
+        },
+    ]
+
+    with Session(engine) as session:
+        for tier in pricing_tiers:
+            exists = session.exec(
+                select(Pricing).where(Pricing.tier == tier["tier"])
+            ).first()
+            if not exists:
+                session.add(Pricing(**tier))
+        session.commit()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     insert_dummy_event_types()
     export_events_to_pdf()
+    insert_pricing_tiers()
 
-    # Import models here to avoid circular imports
-    from app.models import User
+    from app.models import User, Pricing
     from sqlmodel import Session, select
     from app.db.session import engine
     import bcrypt, os
 
-    TEST_EMAIL    = os.getenv("TEST_USER_EMAIL", "test1@test.com")
-    TEST_PASSWORD = os.getenv("TEST_USER_PASSWORD", "T3qu1la!?!")
+    # Load test account details from .env
+    test_accounts = [
+        {
+            "email": os.getenv("TEST_FREE_USER_EMAIL", "free@test.com"),
+            "password": os.getenv("TEST_FREE_USER_PASSWORD", "Free123!?"),
+            "pricing_tier": "Free"
+        },
+        {
+            "email": os.getenv("TEST_PRO_USER_EMAIL", "pro@test.com"),
+            "password": os.getenv("TEST_PRO_USER_PASSWORD", "Pro123!?"),
+            "pricing_tier": "Pro"
+        },
+        {
+            "email": os.getenv("TEST_PREMIUM_USER_EMAIL", "premium@test.com"),
+            "password": os.getenv("TEST_PREMIUM_USER_PASSWORD", "Premium123!?"),
+            "pricing_tier": "Premium"
+        }
+    ]
 
     with Session(engine) as session:
-        exists = session.exec(
-            select(User).where(User.email == TEST_EMAIL)
-        ).first()
-        if not exists:
-            hashed = bcrypt.hashpw(TEST_PASSWORD.encode("utf8"), bcrypt.gensalt()).decode("utf8")
-            test_user = User(
-                first_name="Test",
-                last_name="User",
-                email=TEST_EMAIL,
-                hashed_password=hashed,
-                verified=True
-            )
-            session.add(test_user)
-            session.commit()
+        for account in test_accounts:
+            exists = session.exec(
+                select(User).where(User.email == account["email"])
+            ).first()
+            if not exists:
+                pricing = session.exec(
+                    select(Pricing).where(Pricing.tier == account["pricing_tier"])
+                ).first()
+                if pricing:
+                    hashed = bcrypt.hashpw(account["password"].encode("utf8"), bcrypt.gensalt()).decode("utf8")
+                    test_user = User(
+                        first_name="Test",
+                        last_name=f"{account['pricing_tier']} User",
+                        email=account["email"],
+                        hashed_password=hashed,
+                        verified=True,
+                        pricing_id=pricing.id
+                    )
+                    session.add(test_user)
+        session.commit()
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -71,6 +152,7 @@ app.include_router(gallery_router, prefix="/api")
 app.include_router(upload_router,  prefix="/upload")
 app.include_router(auth_router,    prefix="/auth")
 app.include_router(page_router)
+# Removed duplicate registration of event_router with /auth prefix
 
 @app.get("/")
 async def home(request: Request):

@@ -20,9 +20,13 @@ class User(SQLModel, table=True):
 
 class Pricing(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    tier: str  # e.g., "Free", "Basic", "Ultimate", "Everything"
-    price: float  # e.g., 0.0, 30.0, 60.0, 99.0
-    features: str  # JSON or comma-separated list of features
+    tier: str
+    price: float
+    event_limit: int
+    storage_limit_mb: int
+    can_download: bool
+    storage_duration: int  # in days
+    allow_video: bool
 
     events: List["Event"] = Relationship(back_populates="pricing")
     billings: List["Billing"] = Relationship(back_populates="pricing")

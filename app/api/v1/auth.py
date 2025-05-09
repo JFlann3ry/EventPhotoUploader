@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Request, Response, Form
 from sqlmodel import Session, select
-from app.models import User, Event, FileMetadata, EventType, QRCode  # Corrected import
+from typing import Optional  # Ensure this is included
+from app.models import User, Event, FileMetadata, EventType, QRCode
 from app.db.session import SessionLocal, engine
 from app.utils.token import create_access_token, verify_password, generate_verification_token, verify_verification_token, validate_token
 from app.utils.email_utils import send_verification_email
@@ -25,7 +26,7 @@ import io
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
-from app.api.v1.page import get_logged_in_user  # <-- Add this import
+from app.api.v1.page import get_logged_in_user
 from app.models.models import UserSession
 
 auth_router = APIRouter()
@@ -169,7 +170,8 @@ async def register_user(
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
-    password: str = Form(...)
+    password: str = Form(...),
+    next: Optional[str] = None  # Capture the redirect URL
 ):
     with SessionLocal() as session:
         # Check for existing user by email
@@ -177,7 +179,10 @@ async def register_user(
         results = session.exec(statement)
         existing_user = results.first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="Email already exists.")
+            return templates.TemplateResponse(
+                "sign_up.html",
+                {"request": request, "error": "An account with this email already exists."}
+            )
 
         # Hash the password
         hashed = bcrypt.hashpw(password.encode("utf8"), bcrypt.gensalt())
@@ -186,7 +191,8 @@ async def register_user(
             last_name=last_name,
             email=email,
             hashed_password=hashed.decode("utf8"),
-            verified=False  # User is not verified yet
+            verified=False,
+            pricing_id=1  # Automatically assign Free Plan
         )
         session.add(user)
         session.commit()
@@ -195,8 +201,10 @@ async def register_user(
         # Generate verification token and send email
         token = generate_verification_token(email)
         send_verification_email(email, token)
-    user = get_logged_in_user(request)
-    return templates.TemplateResponse("account_created.html", {"request": request, "user": user})
+
+    # Redirect to the next page or the pricing page by default
+    redirect_url = next or "/pricing"
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 @auth_router.get("/gallery")
 async def user_gallery(request: Request, event_id: int = None):
@@ -352,15 +360,17 @@ async def create_event_post(
     welcome_message: str = Form(...)
 ):
     user = get_logged_in_user(request)
-    token = request.cookies.get("session_token")
-    if not token:
-        return RedirectResponse(url="/auth/login", status_code=303)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-    except Exception:
+    if not user:
         return RedirectResponse(url="/auth/login", status_code=303)
     with SessionLocal() as session:
+        user = session.exec(select(User).where(User.id == user.id)).first()
+        if user.pricing.tier == "Free":
+            events = session.exec(select(Event).where(Event.user_id == user.id)).all()
+            if len(events) >= 1:  # Free tier allows 1 event
+                return templates.TemplateResponse(
+                    "error.html",
+                    {"request": request, "error": "Upgrade your plan to create more events."}
+                )
         try:
             parsed_date = datetime.strptime(event_date, "%Y-%m-%d").date()
         except ValueError:
@@ -377,7 +387,7 @@ async def create_event_post(
         event_code = generate_unique_code(session)
         event_password = generate_unique_code(session)
         event = Event(
-            user_id=user_id,
+            user_id=user.id,
             name=name,
             date=parsed_date,
             event_type_id=event_type_id,
@@ -470,4 +480,53 @@ async def event_qr(event_id: int):
         img.save(buf, format="PNG")
         buf.seek(0)
         return StreamingResponse(buf, media_type="image/png")
+
+@auth_router.post("/upgrade-plan")
+async def upgrade_plan(request: Request, pricing_id: int = Form(...)):
+    user = get_logged_in_user(request)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    with SessionLocal() as session:
+        user = session.exec(select(User).where(User.id == user.id)).first()
+        if user:
+            user.pricing_id = pricing_id
+            session.add(user)
+            session.commit()
+    return RedirectResponse(url="/pricing", status_code=303)
+
+@auth_router.post("/auth/choose-plan")
+async def choose_plan(request: Request, pricing_id: int = Form(...), redirect_url: str = Form(...)):
+    user = get_logged_in_user(request)
+    if not user:
+        # If the user is not logged in, redirect to the sign-up page
+        response = RedirectResponse(url=f"/auth/sign-up?next={redirect_url}", status_code=303)
+        return response
+
+    # If the user is logged in, redirect to the payment page (placeholder for now)
+    response = RedirectResponse(url=f"/auth/payment?pricing_id={pricing_id}", status_code=303)
+    return response
+
+@auth_router.get("/auth/payment")
+async def payment_page(request: Request, pricing_id: int):
+    with SessionLocal() as session:
+        pricing = session.exec(select(Pricing).where(Pricing.id == pricing_id)).first()
+        if not pricing:
+            raise HTTPException(status_code=404, detail="Pricing plan not found.")
+    return templates.TemplateResponse("payment.html", {"request": request, "pricing": pricing})
+
+@auth_router.post("/auth/process-payment")
+async def process_payment(request: Request, pricing_id: int = Form(...)):
+    user = get_logged_in_user(request)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    # Placeholder logic for payment processing
+    with SessionLocal() as session:
+        user = session.exec(select(User).where(User.id == user.id)).first()
+        if user:
+            user.pricing_id = pricing_id  # Upgrade the user's plan
+            session.add(user)
+            session.commit()
+
+    return RedirectResponse(url="/auth/profile", status_code=303)
 

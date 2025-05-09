@@ -9,6 +9,7 @@ import smtplib
 from email.mime.text import MIMEText
 from app.core.config import EMAIL_FROM, EMAIL_PASSWORD, WEBSITE_NAME, SECRET_KEY, ALGORITHM
 from datetime import datetime
+from app.models.models import Pricing
 
 page_router = APIRouter()
 auth_router = APIRouter()
@@ -40,9 +41,11 @@ async def how_it_works(request: Request):
     )
 
 @page_router.get("/pricing")
-async def pricing(request: Request):
+async def pricing_page(request: Request):
     user = get_logged_in_user(request)
-    return templates.TemplateResponse("pricing.html", {"request": request, "user": user})
+    with SessionLocal() as session:
+        pricing = session.exec(select(Pricing)).all()
+    return templates.TemplateResponse("pricing.html", {"request": request, "pricing": pricing, "user": user})
 
 @page_router.get("/guest-login")
 async def guest_login(request: Request):

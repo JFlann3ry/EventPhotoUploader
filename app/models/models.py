@@ -4,14 +4,15 @@ from sqlmodel import SQLModel, Field, Relationship
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    first_name: str = Field(max_length=25)
-    last_name: str = Field(max_length=25)
-    email: str = Field(max_length=50)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    first_name: str
+    last_name: str
+    email: str
     hashed_password: str
     verified: bool = False
     marked_for_deletion: bool = False
+    pricing_id: Optional[int] = Field(default=1, foreign_key="pricing.id")  # Default to Free Plan
 
+    pricing: Optional["Pricing"] = Relationship(back_populates="users")
     events: List["Event"] = Relationship(back_populates="user")
     billings: List["Billing"] = Relationship(back_populates="user")
     sessions: List["UserSession"] = Relationship(back_populates="user")
@@ -19,11 +20,13 @@ class User(SQLModel, table=True):
 
 class Pricing(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    tier: str = Field(max_length=50)
-    price: float
+    tier: str  # e.g., "Free", "Basic", "Ultimate", "Everything"
+    price: float  # e.g., 0.0, 30.0, 60.0, 99.0
+    features: str  # JSON or comma-separated list of features
 
     events: List["Event"] = Relationship(back_populates="pricing")
     billings: List["Billing"] = Relationship(back_populates="pricing")
+    users: List["User"] = Relationship(back_populates="pricing")
 
 
 class EventType(SQLModel, table=True):

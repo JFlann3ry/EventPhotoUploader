@@ -1,9 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Pricing - Event Photo Uploader{% endblock %}
 {% block content %}
-<div class="container">
-    <h1>Pricing</h1>
-    <p>Details about our pricing will be listed here.</p>
-    <a href="/">Back to Home</a>
+<div class="container pricing-container">
+    <h1 class="pricing-title">Choose Your Plan</h1>
+    <div class="pricing-table">
+        {% for tier in pricing %}
+        <div class="pricing-tier">
+            <h2 class="pricing-tier-title">{{ tier.tier }}</h2>
+            <p class="pricing-tier-price">£{{ tier.price }}</p>
+            <ul class="pricing-tier-features">
+                {% for feature in tier.features.split(",") %}
+                <li class="pricing-feature">✔ {{ feature }}</li>
+                {% endfor %}
+            </ul>
+            {% if user and user.pricing_id == tier.id %}
+            <button disabled class="current-plan">Current Plan</button>
+            {% else %}
+            <form method="post" action="/auth/choose-plan">
+                <input type="hidden" name="pricing_id" value="{{ tier.id }}">
+                <input type="hidden" name="redirect_url" value="{{ request.url }}">
+                <button type="submit" class="primary-btn">Choose {{ tier.tier }}</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

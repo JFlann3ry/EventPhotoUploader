@@ -123,8 +123,8 @@
         <mxCell id="T3i2_18rqvz0KpT3URYq-33" value="Guest Upload" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" parent="1" vertex="1">
           <mxGeometry x="292.5" y="1649.9999999999998" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="T3i2_18rqvz0KpT3URYq-34" value="&lt;font color=&quot;#000000&quot;&gt;&lt;b style=&quot;font-size: 13px;&quot;&gt;Event&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;EventID&lt;br&gt;EventTypeID&lt;br&gt;UserID&lt;br&gt;Name&lt;br&gt;Date&lt;br&gt;StoragePath&lt;br&gt;Code&lt;br&gt;Password&lt;/font&gt;&lt;/font&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;CreatedAt&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;LastUpdated&lt;/font&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;Published&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;TermsChecked&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
-          <mxGeometry x="1390" y="80" width="97.5" height="220" as="geometry" />
+        <mxCell id="T3i2_18rqvz0KpT3URYq-34" value="&lt;font color=&quot;#000000&quot;&gt;&lt;b style=&quot;font-size: 13px;&quot;&gt;Event&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;EventID&lt;br&gt;EventTypeID&lt;br&gt;UserID&lt;br&gt;Name&lt;br&gt;Date&lt;br&gt;Code&lt;br&gt;Password&lt;/font&gt;&lt;/font&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;CreatedAt&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;LastUpdated&lt;/font&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;Published&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;TermsChecked&lt;/font&gt;&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
+          <mxGeometry x="1390" y="88.75" width="97.5" height="211.25" as="geometry" />
         </mxCell>
         <mxCell id="T3i2_18rqvz0KpT3URYq-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="T3i2_18rqvz0KpT3URYq-36" target="T3i2_18rqvz0KpT3URYq-41" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -274,7 +274,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-5" value="&lt;b&gt;ErrorLogs&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;LogID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;TimeStamp&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;EventID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;UserIP&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;UserAgent&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Endpoint&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Method&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;StatusCode&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;ErrorType&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Message&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Payload&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" vertex="1" parent="1">
-          <mxGeometry x="1700" y="80" width="70" height="210" as="geometry" />
+          <mxGeometry x="1850" y="80" width="70" height="210" as="geometry" />
         </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qWnpxLDIaZIVIo5OUuWz-6" target="qWnpxLDIaZIVIo5OUuWz-9">
           <mxGeometry relative="1" as="geometry" />
@@ -288,11 +288,14 @@
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-8" value="&lt;b&gt;User&lt;/b&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;UserID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;FirstName&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;LastName&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;Email&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;HashedPassword&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;Verified&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;VerifiedDateTime&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;MarkedForDeletion&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
           <mxGeometry x="1000" y="80" width="90" height="170" as="geometry" />
         </mxCell>
+        <mxCell id="qWnpxLDIaZIVIo5OUuWz-37" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="qWnpxLDIaZIVIo5OUuWz-9" target="qWnpxLDIaZIVIo5OUuWz-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-9" value="Sign Up" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
           <mxGeometry x="440" y="300" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-10" value="Profile" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
-          <mxGeometry x="690" y="490" width="120" height="60" as="geometry" />
+          <mxGeometry x="690" y="680" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="qWnpxLDIaZIVIo5OUuWz-12" target="qWnpxLDIaZIVIo5OUuWz-16">
           <mxGeometry relative="1" as="geometry" />
@@ -344,6 +347,18 @@
         </mxCell>
         <mxCell id="qWnpxLDIaZIVIo5OUuWz-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="qWnpxLDIaZIVIo5OUuWz-20" target="qWnpxLDIaZIVIo5OUuWz-32">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qWnpxLDIaZIVIo5OUuWz-34" value="&lt;b&gt;Purchases&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;PurchaseID&lt;br&gt;PricingID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;UserID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;EventID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#76608a;fontColor=#ffffff;strokeColor=#432D57;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="80" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="qWnpxLDIaZIVIo5OUuWz-35" value="&lt;b&gt;EventStorage&lt;/b&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;EventStorageID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;StoragePath&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;StorageLimitID&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;CurrentUsageMB&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;LastUploadDateTime&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;IsLocked&lt;/font&gt;&lt;/div&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="80" width="100" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="qWnpxLDIaZIVIo5OUuWz-36" value="First Name&lt;div&gt;Last Name&lt;/div&gt;&lt;div&gt;Email&lt;/div&gt;&lt;div&gt;Password&lt;/div&gt;&lt;div&gt;Confirm Password&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
+          <mxGeometry x="440" y="420" width="120" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="qWnpxLDIaZIVIo5OUuWz-39" value="Check&lt;div&gt;Details&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
+          <mxGeometry x="460" y="540" width="80" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

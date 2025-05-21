@@ -126,8 +126,8 @@
         <mxCell id="T3i2_18rqvz0KpT3URYq-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="T3i2_18rqvz0KpT3URYq-36" target="T3i2_18rqvz0KpT3URYq-41" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="T3i2_18rqvz0KpT3URYq-36" value="Email&lt;div&gt;Photo/Video Upload&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" parent="1" vertex="1">
-          <mxGeometry x="292.5" y="1774.9999999999998" width="120" height="60" as="geometry" />
+        <mxCell id="T3i2_18rqvz0KpT3URYq-36" value="Email&lt;div&gt;Photo/Video Upload&lt;/div&gt;&lt;div&gt;Terms Checked&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" parent="1" vertex="1">
+          <mxGeometry x="278.75" y="1775" width="147.5" height="60" as="geometry" />
         </mxCell>
         <mxCell id="T3i2_18rqvz0KpT3URYq-38" value="File Storage&lt;div&gt;{EventID}\{Uploads}\{GuestID}&lt;/div&gt;" style="shape=dataStorage;whiteSpace=wrap;html=1;fixedSize=1;" parent="1" vertex="1">
           <mxGeometry x="642.5" y="1864.9999999999998" width="215" height="80" as="geometry" />

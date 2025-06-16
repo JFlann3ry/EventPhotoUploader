@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from app.models import Photo, Event
+from app.models import Event, FileMetadata
 from app.db.session import engine
 
 with Session(engine) as session:
@@ -9,9 +9,11 @@ with Session(engine) as session:
         print(f"No event found with ID {event_id}")
     else:
         print(f"Event: {event.name}")
-        photos = session.exec(select(Photo).where(Photo.event_id == event_id)).all()
-        if not photos:
-            print(f"No photos found for event ID {event_id}")
+        files = session.exec(
+            select(FileMetadata).where(FileMetadata.event_id == event_id)
+        ).all()
+        if not files:
+            print(f"No files found for event ID {event_id}")
         else:
-            for photo in photos:
-                print(f"Photo: {photo.filepath}, Caption: {photo.caption}")
+            for f in files:
+                print(f"File: {f.file_name}, Uploaded: {f.created_date}")

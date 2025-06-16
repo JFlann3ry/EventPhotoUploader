@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Event Created{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Event Created Successfully</h1>
+  <p>Your event “{{ event.name }}” has been created.</p>
+  <p><strong>Event Code:</strong> {{ event_code }}</p>
+  <p><strong>Event Password:</strong> {{ event_password }}</p>
+  <a href="/auth/profile">Back to Profile</a>
+</div>
+{% endblock %}

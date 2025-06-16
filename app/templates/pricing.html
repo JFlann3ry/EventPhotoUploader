@@ -9,9 +9,11 @@
             <h2 class="pricing-tier-title">{{ tier.tier }}</h2>
             <p class="pricing-tier-price">£{{ tier.price }}</p>
             <ul class="pricing-tier-features">
-                {% for feature in tier.features.split(",") %}
-                <li class="pricing-feature">✔ {{ feature }}</li>
-                {% endfor %}
+                <li class="pricing-feature">✔ {{ tier.event_limit }} Event{{ "s" if tier.event_limit > 1 else "" }}</li>
+                <li class="pricing-feature">✔ {{ "Unlimited" if tier.storage_limit_mb == -1 else tier.storage_limit_mb ~ "MB" }} Storage</li>
+                <li class="pricing-feature">✔ {{ "Downloads Allowed" if tier.can_download else "No Downloads" }}</li>
+                <li class="pricing-feature">✔ {{ tier.storage_duration }} Days Storage</li>
+                <li class="pricing-feature">✔ {{ "Video Uploads Allowed" if tier.allow_video else "No Video Uploads" }}</li>
             </ul>
             {% if user and user.pricing_id == tier.id %}
             <button disabled class="current-plan">Current Plan</button>

@@ -9,16 +9,20 @@
             <input type="text" id="name" name="name" required>
         </div>
         <div>
-            <label for="description">Description:</label>
-            <textarea id="description" name="description"></textarea>
+            <label for="date">Event Date:</label>
+            <input type="date" id="date" name="date" required>
         </div>
         <div>
-            <label for="event_code">Event Code:</label>
-            <input type="text" id="event_code" name="event_code" maxlength="4" required>
+            <label for="event_type_id">Event Type:</label>
+            <select id="event_type_id" name="event_type_id" required>
+                {% for et in event_types %}
+                <option value="{{ et.id }}">{{ et.name }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div>
-            <label for="password">Event Password:</label>
-            <input type="password" id="password" name="password" maxlength="4" required>
+            <label for="welcome_message">Welcome Message:</label>
+            <textarea id="welcome_message" name="welcome_message"></textarea>
         </div>
         <button type="submit">Create Event</button>
     </form>

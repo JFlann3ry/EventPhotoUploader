@@ -5,17 +5,10 @@ from datetime import datetime, timedelta
 import os
 import jwt  # Install with `pip install PyJWT`
 import bcrypt  # Ensure bcrypt is installed: pip install bcrypt
-from app.core.config import SECRET_KEY, BASE_URL, EMAIL_FROM, EMAIL_PASSWORD
-import smtplib
-from email.mime.text import MIMEText
+from app.core.config import SECRET_KEY, BASE_URL, EMAIL_FROM, EMAIL_PASSWORD, ALGORITHM
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Retrieve the secret key from environment variables
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY is not set in the environment variables")
 
 signer = TimestampSigner(SECRET_KEY)
 serializer = URLSafeTimedSerializer(SECRET_KEY)

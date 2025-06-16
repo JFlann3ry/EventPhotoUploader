@@ -1,0 +1,10 @@
+.upload-container {
+  border-top: 4px solid var(--theme);
+  padding: 1rem;
+}
+.upload-banner {
+  width: 100%; max-height: 200px; object-fit: cover; margin-bottom:1rem;
+}
+.upload-instructions {
+  background: #f9f9f9; padding:0.75rem; margin-bottom:1rem; border-left:4px solid var(--theme);
+}

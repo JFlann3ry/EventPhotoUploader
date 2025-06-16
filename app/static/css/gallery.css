@@ -1,63 +1,77 @@
+/* ─── Gallery Container ──────────────────────────────────────────────────── */
+
+/* Styles for the gallery container */
 .gallery-container {
-    display: grid;
+    display: grid; /* Use a grid layout for the gallery */
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Flexible columns */
-    gap: 15px; /* Add padding between items */
+    gap: 15px; /* Add spacing between items */
     padding: 20px; /* Add padding around the gallery */
-    background-color: #f9f9f9; /* Optional: light background for contrast */
+    background-color: #f9f9f9; /* Light background for contrast */
     border-radius: 10px; /* Rounded corners for the gallery container */
 }
 
-.gallery-item {
-    cursor: pointer;
-}
+/* ─── Gallery Items ──────────────────────────────────────────────────────── */
 
+/* Base styles for each gallery item */
 .gallery-item {
-    position: relative;
-    overflow: hidden;
+    position: relative; /* Enable positioning for child elements */
+    overflow: hidden; /* Hide content that overflows the item */
     border-radius: 10px; /* Rounded corners for each photo */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    cursor: pointer; /* Change cursor to pointer on hover */
 }
 
+/* Styles for images inside gallery items */
 .gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%; /* Make the image fill the item's width */
+    height: 100%; /* Make the image fill the item's height */
+    object-fit: cover; /* Ensure the image covers the entire item */
+    display: block; /* Remove inline spacing */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions for hover effects */
 }
 
+/* Hover effect for images */
 .gallery-item img:hover {
     transform: scale(1.05); /* Slight zoom on hover */
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
 }
 
-/* Define sizes for large and small items */
+/* ─── Item Sizes ─────────────────────────────────────────────────────────── */
+
+/* Styles for large items */
 .gallery-item[data-size="large"] {
     grid-column: span 2; /* Span 2 columns */
     grid-row: span 2; /* Span 2 rows */
 }
 
+/* Styles for small items */
 .gallery-item[data-size="small"] {
     grid-column: span 1; /* Span 1 column */
     grid-row: span 1; /* Span 1 row */
 }
 
-/* Responsive adjustments */
+/* ─── Responsive Adjustments ─────────────────────────────────────────────── */
+
+/* Adjustments for screens smaller than 768px */
 @media (max-width: 768px) {
     .gallery-container {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Smaller columns on smaller screens */
     }
 }
 
+/* Adjustments for screens smaller than 480px */
 @media (max-width: 480px) {
     .gallery-container {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Even smaller columns on very small screens */
     }
 }
 
+/* ─── Media Items ────────────────────────────────────────────────────────── */
+
+/* Styles for media items (e.g., videos) */
 .gallery-item-media {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background-color: #f0f0f0; /* letterbox fill */
+    width: 100%; /* Make the media fill the item's width */
+    height: 100%; /* Make the media fill the item's height */
+    object-fit: contain; /* Ensure the media fits within the item */
+    background-color: #f0f0f0; /* Light background for letterbox effect */
 }

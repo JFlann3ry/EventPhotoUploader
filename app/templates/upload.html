@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Upload – {{ event.name }}{% endblock %}
+{% block content %}
+  <div class="upload-container" style="--theme: {{ event.theme_color }};">
+    {% if event.banner_url %}
+      <img src="{{ event.banner_url }}" class="upload-banner" alt="Event banner">
+    {% endif %}
+    {% if event.instructions %}
+      <div class="upload-instructions">{{ event.instructions | safe }}</div>
+    {% endif %}
+
+    <form id="photoUploadForm" action="/api/upload/{{ event.id }}" method="post" enctype="multipart/form-data">
+      {% if event.require_guest_name %}
+        <label>Your Name:</label>
+        <input type="text" name="guest_name" required /><br><br>
+      {% endif %}
+      <!-- file inputs… -->
+    </form>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // if watermark_text, apply to client‐side preview
+  const WM = "{{ event.watermark_text or '' }}";
+  if (WM) {
+    // your JS to overlay `WM` on selected images before upload
+  }
+</script>
+{% endblock %}

@@ -2,101 +2,158 @@
 {% block title %}Event Details{% endblock %}
 {% block content %}
 <div class="container event-details-container">
-    {% if user %}
-      <div class="user-info">
-        Logged in as: {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
-        <a href="/auth/logout">Logout</a>
+  <h1>Event Details</h1>
+
+  <form method="post"
+        action="/auth/events/{{ event.id }}"
+        id="eventDetailsForm"
+        enctype="multipart/form-data">
+
+    <!-- Display mode -->
+    <div id="displayMode">
+      <section class="event-section">
+        <h2>Event Info</h2>
+        <div><strong>Name:</strong> {{ event.name }}</div>
+        <div><strong>Date:</strong> {{ event.date.strftime('%Y-%m-%d') }}</div>
+        <div><strong>Type:</strong>
+          {% for et in event_types %}
+              {% if event.event_type_id == et.id %}
+                  {{ et.name }}
+              {% endif %}
+          {% endfor %}
+        </div>
+        <div><strong>Welcome Message:</strong>
+          <div style="white-space: pre-line;">{{ event.welcome_message }}</div>
+        </div>
+      </section>
+      <section class="event-section">
+        <h2>Access Details</h2>
+        <div><strong>Event Code:</strong> {{ event.event_code }}</div>
+        <div>
+          <strong>Event Password:</strong>
+          <span id="eventPassword">{{ event.event_password }}</span>
+        </div>
+      </section>
+      <section class="event-section" style="text-align:center;">
+        <h2>QR Code</h2>
+        <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">
+          <img src="/auth/event-qr?event_id={{ event.id }}" alt="Event QR Code" class="qr-img">
+        </a>
+        <div style="font-size:0.95em;">Scan to upload</div>
+      </section>
+      <div style="text-align:center; margin-top:2rem;">
+        <button type="button"
+                id="editBtn"
+                onclick="showEditMode()"
+                class="primary-btn">
+          Edit
+        </button>
       </div>
-    {% endif %}
-    <h1>Event Details</h1>
-    {% if event %}
-        <form method="post" action="/auth/event-details/{{ event.id }}" id="eventDetailsForm">
-            {% if error %}
-            <div class="error" style="color:red;">{{ error }}</div>
-            {% endif %}
-            {% if success %}
-            <div class="success-message" role="status" aria-live="polite" style="color:green; margin-bottom:1em;">
-                Event details updated successfully!
-            </div>
-            {% endif %}
+    </div>
 
-            <!-- Display mode -->
-            <div id="displayMode">
-                <section class="event-section">
-                    <h2>Event Info</h2>
-                    <div><strong>Name:</strong> {{ event.name }}</div>
-                    <div><strong>Date:</strong> {{ event.date | format_date }}</div>
-                    <div><strong>Type:</strong>
-                        {% for et in event_types %}
-                            {% if event.event_type_id == et.id %}
-                                {{ et.name }}
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                    <div><strong>Welcome Message:</strong>
-                        <div style="white-space: pre-line;">{{ event.welcome_message }}</div>
-                    </div>
-                </section>
-                <section class="event-section">
-                    <h2>Access Details</h2>
-                    <div><strong>Event Code:</strong> {{ event.event_code }}</div>
-                    <div>
-                        <strong>Event Password:</strong>
-                        <span id="eventPassword">{{ event.event_password }}</span>
-                    </div>
-                </section>
-                <section class="event-section" style="text-align:center;">
-                    <h2>QR Code</h2>
-                    <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">
-                        <img src="/auth/event-qr?event_id={{ event.id }}" alt="Event QR Code" class="qr-img">
-                    </a>
-                    <div style="font-size:0.95em;">Scan to upload</div>
-                </section>
-                <div style="text-align:center; margin-top: 2em;">
-                    <button type="button" id="editBtn" onclick="showEditMode()" class="primary-btn" aria-label="Edit event details">Edit</button>
-                </div>
-            </div>
+    <!-- Edit mode (was outside your form!) -->
+    <div id="editMode" class="hidden">
+      <h2>Edit Event</h2>
 
-            <!-- Edit mode -->
-            <div id="editMode" style="display:none;">
-                <h2>Edit Event</h2>
-                <label for="name">Event Name:</label>
-                <input type="text" id="name" name="name" value="{{ event.name }}" required aria-required="true">
-                {% if field_errors.name %}
-                    <div class="error-message" role="alert">{{ field_errors.name }}</div>
-                {% endif %}
-                <br><br>
-                <label for="event_date">Event Date:</label>
-                <input
-                    type="text"
-                    id="event_date"
-                    autocomplete="off"
-                    placeholder="Select event date"
-                    value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}"
-                >
-                <input type="hidden" name="event_date" id="event_date_hidden" value="{{ event.date.strftime('%Y-%m-%d') if event and event.date else '' }}">
-                <br><br>
-                <label for="event_type_id">Event Type:</label>
-                <select name="event_type_id" id="event_type_id" required>
-                    {% for et in event_types %}
-                        <option value="{{ et.id }}">{{ et.name }}</option>
-                    {% endfor %}
-                </select>
-                <br><br>
-                <label for="welcome_message">Welcome Message:</label><br>
-                <textarea name="welcome_message" id="welcome_message" rows="4" cols="50">{{ event.welcome_message }}</textarea>
-                <br><br>
-                <button type="submit" id="saveBtn" class="primary-btn" aria-label="Save event details">Save</button>
-                <button type="button" id="cancelBtn" onclick="hideEditMode()" class="secondary-btn" aria-label="Cancel editing">Cancel</button>
-            </div>
-        </form>
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name"
+               value="{{ event.name }}" required>
+      </div>
 
-    {% else %}
-        <p>No event details found.</p>
-    {% endif %}
+      <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" id="date" name="date"
+               value="{{ event.date.strftime('%Y-%m-%d') }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="event_type_id">Type</label>
+        <select id="event_type_id" name="event_type_id">
+          {% for et in event_types %}
+            <option value="{{ et.id }}"
+              {% if et.id == event.event_type_id %}selected{% endif %}>
+              {{ et.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group full">
+        <label for="welcome_message">Welcome Message</label>
+        <textarea id="welcome_message" name="welcome_message" rows="3">{{ event.welcome_message }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="banner_file">Banner Image</label>
+        <input type="file" id="banner_file" name="banner_file" accept="image/*">
+      </div>
+
+      {% if event.banner_filename %}
+      <div class="form-group full">
+        <label>Current Banner</label>
+        <img src="/uploads/{{ event.event_code }}/customisation/{{ event.banner_filename }}"
+             alt="Banner" style="max-width:100%; border-radius:4px;">
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="theme_color">Theme Color</label>
+        <input type="color" id="theme_color"
+               name="theme_color"
+               value="{{ event.theme_color }}">
+      </div>
+
+      <div class="form-group full">
+        <label for="instructions">Instructions (HTML)</label>
+        <textarea id="instructions" name="instructions" rows="3">{{ event.instructions }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Require Guest Name?</label>
+        <input type="checkbox"
+               id="require_guest_name"
+               name="require_guest_name"
+               {% if event.require_guest_name %}checked{% endif %}>
+      </div>
+
+      <div class="form-group">
+        <label for="watermark_text">Watermark Text</label>
+        <input type="text" id="watermark_text"
+               name="watermark_text"
+               value="{{ event.watermark_text }}">
+      </div>
+
+      <div style="text-align:right; margin-top:2rem;">
+        <button type="submit" id="saveBtn" class="primary-btn">Save</button>
+        <button type="button"
+                id="cancelBtn"
+                onclick="hideEditMode()"
+                class="secondary-btn">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+  </form>    <!-- moved here! -->
 </div>
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
-<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
-<script src="/static/js/event_date_picker.js"></script>
+{% endblock %}
+
+{% block scripts %}
 <script src="/static/js/event_details.js"></script>
 {% endblock %}
+
+<!-- Auto-dismiss success toast -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toast = document.querySelector('.success-message');
+    if (!toast) return;
+    // fade‐out after 3s
+    setTimeout(() => {
+      toast.style.transition = 'opacity 0.5s ease';
+      toast.style.opacity = '0';
+      // remove from DOM after fade
+      setTimeout(() => toast.remove(), 500);
+    }, 3000);
+  });
+</script>

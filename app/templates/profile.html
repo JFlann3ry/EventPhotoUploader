@@ -1,18 +1,44 @@
 {% extends "base.html" %}
-{% block title %}Your Profile - {{ WEBSITE_NAME }}{% endblock %}
+{% block title %}Profile{% endblock %}
 {% block content %}
 <div class="container">
-    <div class="profile-card">
-        <h2>{{ user.first_name }} {{ user.last_name }}</h2>
-        <p>{{ user.email }}</p>
-        <hr>
-        <div class="profile-actions">
-            <a href="/auth/gallery" class="primary-btn">View & Download Event Photos</a>
-            <a href="/auth/events/create" class="primary-btn">Create New Event</a>
-        </div>
-        <a href="/auth/logout" class="logout">Logout</a>
-        <hr>
-        <a href="/auth/delete-account" class="delete-account">Delete Account</a>
-    </div>
+  <h1>{{ user.first_name }}’s Profile</h1>
+
+  <div class="actions">
+    {% if not pricing or events|length < pricing.event_limit %}
+      <a href="/auth/events/create" class="btn btn-primary">Create New Event</a>
+    {% else %}
+      <button class="btn btn-secondary" disabled>Event limit reached</button>
+    {% endif %}
+    <a href="/auth/delete-account" class="btn btn-danger">Delete Account</a>
+  </div>
+
+  <h2>Your Events</h2>
+  {% if events %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+        <tr>
+          <td>{{ event.name }}</td>
+          <td>{{ event.date.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <a href="/auth/events/{{ event.id }}">Details</a> |
+            <a href="/upload/{{ event.event_code }}/{{ event.event_password }}">Upload Photos</a> |
+            <a href="/api/gallery/{{ event.id }}">View Photos</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>You have no events yet.</p>
+  {% endif %}
 </div>
 {% endblock %}

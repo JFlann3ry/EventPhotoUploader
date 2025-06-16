@@ -1,24 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Login - Event Photo Uploader{% endblock %}
+{% block title %}Log In{% endblock %}
 {% block content %}
 <div class="container" style="max-width: 400px; margin: 40px auto;">
-    <h1>Login</h1>
-    {% if error %}
-      <div class="error-message" role="alert" aria-live="polite">{{ error | safe }}</div>
-    {% endif %}
-    <form method="post" action="/auth/login" id="loginForm">
-        <label for="email">Email:</label>
-        <input type="email" name="email" id="email" placeholder="Email" required autocomplete="username">
-
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" placeholder="Password" required autocomplete="current-password">
-
-        <button type="submit" class="primary-btn" style="width:100%; margin-top:16px;">Login</button>
+    <h1>Log In</h1>
+    <form action="/auth/login" method="post" id="loginForm">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="Email" required autocomplete="username">
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="Password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="primary-btn" style="width:100%; margin-top:16px;">Log In</button>
     </form>
     <a href="/">Back to Home</a>
     <div style="text-align:center; margin-top:16px;">
-    <span>Don't have an account?</span>
-    <a href="/auth/sign-up" class="secondary-btn" style="margin-left:8px;">Sign Up</a>
-</div>
+        <span>Don't have an account?</span>
+        <a href="/auth/sign-up" class="secondary-btn" style="margin-left:8px;">Sign Up</a>
+    </div>
 </div>
 {% endblock %}
